@@ -1,0 +1,120 @@
+========================================
+EXEMPLO DE TEMPLATE DE CERTIFICADO
+========================================
+
+COMO CRIAR:
+1. Abra o Microsoft Word ou LibreOffice Writer
+2. Copie o texto abaixo
+3. Cole no documento
+4. Formate como desejar (fontes, cores, bordas, etc.)
+5. Salve como .docx
+6. Faça upload em Admin → Templates de Certificado
+
+========================================
+
+                    SKILLPRO - PLATAFORMA DE EDUCAÇÃO
+
+                        CERTIFICADO DE CONCLUSÃO
+
+
+Certificamos que {nome}, portador(a) do CPF {cpf}, concluiu com êxito o curso
+"{curso}" com carga horária de {carga_horaria}.
+
+O aluno demonstrou excelente desempenho durante o curso, obtendo a nota final
+de {nota}% na avaliação final.
+
+Este certificado é válido em todo o território nacional e comprova a participação
+e aprovação no curso mencionado.
+
+
+Emitido em: {data}
+
+
+ID do Certificado (Hash): {hash}
+
+
+Para verificar a autenticidade deste certificado, acesse:
+https://skillpro.com.br/verificar-certificado/{hash}
+
+
+                    ______________________
+                    Diretor Acadêmico
+                    SkillPro Educação
+
+
+========================================
+
+VARIÁVEIS DISPONÍVEIS:
+
+{nome} - Nome completo do aluno
+{cpf} - CPF do aluno
+{curso} - Título do curso
+{carga_horaria} - Duração do curso
+{data} - Data de conclusão (formato: 30 de dezembro de 2025)
+{nota} - Nota final (ex: 95.5)
+{hash} - ID único do certificado (16 caracteres)
+
+========================================
+
+DICAS DE FORMATAÇÃO:
+
+1. Use uma fonte elegante como:
+   - Times New Roman
+   - Garamond
+   - Georgia
+
+2. Tamanho de fonte sugerido:
+   - Título: 24pt, negrito
+   - Corpo: 12pt
+   - Hash: 10pt, monoespaçado
+
+3. Adicione bordas decorativas:
+   - Design → Bordas de Página
+   - Escolha um estilo elegante
+
+4. Use papel A4 em orientação Paisagem:
+   - Layout → Orientação → Paisagem
+
+5. Adicione seu logo:
+   - Inserir → Imagem
+   - Posicione no topo centralizado
+
+6. Use cores institucionais:
+   - Configure as cores do texto
+   - Mantenha profissional
+
+========================================
+
+EXEMPLO DE CERTIFICADO PREENCHIDO:
+
+                    SKILLPRO - PLATAFORMA DE EDUCAÇÃO
+
+                        CERTIFICADO DE CONCLUSÃO
+
+
+Certificamos que João da Silva, portador(a) do CPF 123.456.789-00, concluiu
+com êxito o curso "JavaScript Moderno - Do Básico ao Avançado" com carga
+horária de 40 horas.
+
+O aluno demonstrou excelente desempenho durante o curso, obtendo a nota final
+de 95.5% na avaliação final.
+
+Este certificado é válido em todo o território nacional e comprova a participação
+e aprovação no curso mencionado.
+
+
+Emitido em: 30 de dezembro de 2025
+
+
+ID do Certificado (Hash): A1B2C3D4E5F6G7H8
+
+
+Para verificar a autenticidade deste certificado, acesse:
+https://skillpro.com.br/verificar-certificado/A1B2C3D4E5F6G7H8
+
+
+                    ______________________
+                    Diretor Acadêmico
+                    SkillPro Educação
+
+========================================

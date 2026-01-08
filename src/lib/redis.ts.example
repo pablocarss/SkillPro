@@ -1,0 +1,159 @@
+// Redis Configuration for Caching
+// Uncomment and configure when ready to use Redis for caching
+
+/*
+import { Redis } from 'ioredis';
+
+const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
+
+// Cache keys
+const CACHE_KEYS = {
+  COURSE: (id: string) => `course:${id}`,
+  COURSES_LIST: 'courses:list',
+  USER: (id: string) => `user:${id}`,
+  ENROLLMENT: (userId: string, courseId: string) => `enrollment:${userId}:${courseId}`,
+  QUIZ_ATTEMPTS: (userId: string, quizId: string) => `quiz-attempts:${userId}:${quizId}`,
+  CERTIFICATES: (userId: string) => `certificates:${userId}`,
+};
+
+// Cache expiration times (in seconds)
+const CACHE_TTL = {
+  SHORT: 300, // 5 minutes
+  MEDIUM: 1800, // 30 minutes
+  LONG: 3600, // 1 hour
+  DAY: 86400, // 24 hours
+};
+
+// Generic cache operations
+export async function getCache<T>(key: string): Promise<T | null> {
+  try {
+    const data = await redis.get(key);
+    return data ? JSON.parse(data) : null;
+  } catch (error) {
+    console.error('Redis GET error:', error);
+    return null;
+  }
+}
+
+export async function setCache(
+  key: string,
+  value: any,
+  ttl: number = CACHE_TTL.MEDIUM
+): Promise<void> {
+  try {
+    await redis.setex(key, ttl, JSON.stringify(value));
+  } catch (error) {
+    console.error('Redis SET error:', error);
+  }
+}
+
+export async function deleteCache(key: string): Promise<void> {
+  try {
+    await redis.del(key);
+  } catch (error) {
+    console.error('Redis DELETE error:', error);
+  }
+}
+
+export async function deleteCachePattern(pattern: string): Promise<void> {
+  try {
+    const keys = await redis.keys(pattern);
+    if (keys.length > 0) {
+      await redis.del(...keys);
+    }
+  } catch (error) {
+    console.error('Redis DELETE PATTERN error:', error);
+  }
+}
+
+// Specific cache operations
+
+// Cache course data
+export async function getCachedCourse(courseId: string) {
+  return getCache(CACHE_KEYS.COURSE(courseId));
+}
+
+export async function setCachedCourse(courseId: string, data: any) {
+  return setCache(CACHE_KEYS.COURSE(courseId), data, CACHE_TTL.LONG);
+}
+
+export async function invalidateCourseCache(courseId: string) {
+  await deleteCache(CACHE_KEYS.COURSE(courseId));
+  await deleteCache(CACHE_KEYS.COURSES_LIST);
+}
+
+// Cache user data
+export async function getCachedUser(userId: string) {
+  return getCache(CACHE_KEYS.USER(userId));
+}
+
+export async function setCachedUser(userId: string, data: any) {
+  return setCache(CACHE_KEYS.USER(userId), data, CACHE_TTL.MEDIUM);
+}
+
+// Cache certificates
+export async function getCachedCertificates(userId: string) {
+  return getCache(CACHE_KEYS.CERTIFICATES(userId));
+}
+
+export async function setCachedCertificates(userId: string, data: any) {
+  return setCache(CACHE_KEYS.CERTIFICATES(userId), data, CACHE_TTL.LONG);
+}
+
+// Rate limiting
+export async function checkRateLimit(
+  key: string,
+  limit: number,
+  window: number
+): Promise<boolean> {
+  try {
+    const current = await redis.incr(key);
+    if (current === 1) {
+      await redis.expire(key, window);
+    }
+    return current <= limit;
+  } catch (error) {
+    console.error('Rate limit check error:', error);
+    return true; // Allow on error
+  }
+}
+
+// Session management
+export async function setSession(sessionId: string, data: any, ttl: number = 3600) {
+  return setCache(`session:${sessionId}`, data, ttl);
+}
+
+export async function getSession(sessionId: string) {
+  return getCache(`session:${sessionId}`);
+}
+
+export async function deleteSession(sessionId: string) {
+  return deleteCache(`session:${sessionId}`);
+}
+
+// Usage examples:
+//
+// 1. Cache course list on the homepage:
+// const cachedCourses = await getCache(CACHE_KEYS.COURSES_LIST);
+// if (cachedCourses) return cachedCourses;
+// const courses = await prisma.course.findMany(...);
+// await setCache(CACHE_KEYS.COURSES_LIST, courses, CACHE_TTL.MEDIUM);
+//
+// 2. Invalidate cache when course is updated:
+// await prisma.course.update(...);
+// await invalidateCourseCache(courseId);
+//
+// 3. Rate limit API requests:
+// const allowed = await checkRateLimit(`api:${userId}`, 100, 60);
+// if (!allowed) return res.status(429).json({ error: 'Too many requests' });
+//
+// 4. Cache user certificates:
+// const cached = await getCachedCertificates(userId);
+// if (cached) return cached;
+// const certificates = await prisma.certificate.findMany(...);
+// await setCachedCertificates(userId, certificates);
+
+export { redis, CACHE_KEYS, CACHE_TTL };
+*/
+
+export {};

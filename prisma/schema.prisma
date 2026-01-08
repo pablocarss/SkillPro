@@ -1,0 +1,356 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  STUDENT
+}
+
+enum EnrollmentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+  DEBIT_CARD
+  PIX
+  BOLETO
+}
+
+model User {
+  id          String    @id @default(cuid())
+  email       String    @unique
+  password    String
+  name        String
+  cpf         String?   @unique
+  birthDate   DateTime?
+  phone       String?
+  role        Role      @default(STUDENT)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  enrollments              Enrollment[]
+  certificates             Certificate[]
+  quizAttempts             StudentQuizAttempt[]
+  examAttempts             StudentExamAttempt[]
+  createdCourses           Course[]                @relation("CourseCreator")
+  createdCertificates      Certificate[]           @relation("CertificateCreator")
+  createdTemplates         CertificateTemplate[]   @relation("TemplateCreator")
+  lessonProgress           LessonProgress[]
+  testimonials             Testimonial[]
+
+  @@map("users")
+}
+
+model Course {
+  id                   String   @id @default(cuid())
+  title                String
+  description          String   @db.Text
+  thumbnail            String?
+  duration             String?
+  level                String?
+  price                Float?
+  targetAudience       String?
+  passingScore         Int      @default(70) // Minimum percentage to pass
+  isPublished          Boolean  @default(false)
+  certificateTemplateId String?
+  createdById          String
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  // Relations
+  createdBy            User                 @relation("CourseCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  certificateTemplate  CertificateTemplate? @relation(fields: [certificateTemplateId], references: [id])
+  modules              Module[]
+  enrollments          Enrollment[]
+  finalExam            FinalExam?
+  certificates         Certificate[]
+  testimonials         Testimonial[]
+
+  @@map("courses")
+}
+
+model Module {
+  id          String   @id @default(cuid())
+  title       String
+  description String?  @db.Text
+  order       Int
+  courseId    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  course  Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons Lesson[]
+
+  @@map("modules")
+}
+
+model Lesson {
+  id          String   @id @default(cuid())
+  title       String
+  description String?  @db.Text
+  content     String   @db.Text
+  videoUrl    String?
+  order       Int
+  moduleId    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  module   Module             @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  quizzes  Quiz[]
+  progress LessonProgress[]
+
+  @@map("lessons")
+}
+
+model LessonProgress {
+  id          String    @id @default(cuid())
+  studentId   String
+  lessonId    String
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  student User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  lesson  Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, lessonId])
+  @@map("lesson_progress")
+}
+
+model Quiz {
+  id          String   @id @default(cuid())
+  title       String
+  description String?  @db.Text
+  lessonId    String
+  passingScore Int     @default(70)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  lesson    Lesson               @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  questions QuizQuestion[]
+  attempts  StudentQuizAttempt[]
+
+  @@map("quizzes")
+}
+
+model QuizQuestion {
+  id        String   @id @default(cuid())
+  question  String   @db.Text
+  quizId    String
+  order     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  quiz    Quiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  answers QuizAnswer[]
+
+  @@map("quiz_questions")
+}
+
+model QuizAnswer {
+  id         String   @id @default(cuid())
+  answer     String   @db.Text
+  isCorrect  Boolean  @default(false)
+  questionId String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  question QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("quiz_answers")
+}
+
+model StudentQuizAttempt {
+  id        String   @id @default(cuid())
+  studentId String
+  quizId    String
+  score     Float
+  answers   Json // Store selected answers
+  passed    Boolean
+  createdAt DateTime @default(now())
+
+  // Relations
+  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  quiz    Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@map("student_quiz_attempts")
+}
+
+model FinalExam {
+  id           String   @id @default(cuid())
+  title        String
+  description  String?  @db.Text
+  courseId     String   @unique
+  passingScore Int      @default(70)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  course    Course               @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  questions FinalExamQuestion[]
+  attempts  StudentExamAttempt[]
+
+  @@map("final_exams")
+}
+
+model FinalExamQuestion {
+  id         String   @id @default(cuid())
+  question   String   @db.Text
+  examId     String
+  order      Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  exam    FinalExam         @relation(fields: [examId], references: [id], onDelete: Cascade)
+  answers FinalExamAnswer[]
+
+  @@map("final_exam_questions")
+}
+
+model FinalExamAnswer {
+  id         String   @id @default(cuid())
+  answer     String   @db.Text
+  isCorrect  Boolean  @default(false)
+  questionId String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  question FinalExamQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("final_exam_answers")
+}
+
+model StudentExamAttempt {
+  id        String   @id @default(cuid())
+  studentId String
+  examId    String
+  score     Float
+  answers   Json // Store selected answers
+  passed    Boolean
+  createdAt DateTime @default(now())
+
+  // Relations
+  student User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  exam    FinalExam @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  @@map("student_exam_attempts")
+}
+
+model Enrollment {
+  id        String           @id @default(cuid())
+  studentId String
+  courseId  String
+  status    EnrollmentStatus @default(PENDING)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  // Relations
+  student User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course  Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  payment Payment?
+
+  @@unique([studentId, courseId])
+  @@map("enrollments")
+}
+
+model CertificateTemplate {
+  id           String   @id @default(cuid())
+  name         String
+  description  String?  @db.Text
+  templateUrl  String   // MinIO URL for the .docx template file
+  isDefault    Boolean  @default(false)
+  createdById  String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  createdBy    User          @relation("TemplateCreator", fields: [createdById], references: [id])
+  certificates Certificate[]
+  courses      Course[]
+
+  @@map("certificate_templates")
+}
+
+model Certificate {
+  id               String   @id @default(cuid())
+  certificateHash  String?  @unique @default(cuid()) // Unique hash for verification
+  digitalSignature String?  // Digital signature for authenticity
+  studentId        String
+  courseId         String
+  templateId       String?
+  createdById      String
+  issueDate        DateTime @default(now())
+  finalScore       Float
+  pdfUrl           String? // MinIO storage URL for generated PDF
+
+  // Relations
+  student   User                 @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course    Course               @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  template  CertificateTemplate? @relation(fields: [templateId], references: [id])
+  createdBy User                 @relation("CertificateCreator", fields: [createdById], references: [id])
+
+  @@unique([studentId, courseId])
+  @@map("certificates")
+}
+
+model Payment {
+  id                String        @id @default(cuid())
+  enrollmentId      String        @unique
+  amount            Float
+  currency          String        @default("BRL")
+  status            PaymentStatus @default(PENDING)
+  paymentMethod     PaymentMethod?
+  stripePaymentId   String?       @unique
+  stripeSessionId   String?       @unique
+  paidAt            DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  // Relations
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+model Testimonial {
+  id         String   @id @default(cuid())
+  studentId  String
+  courseId   String?
+  rating     Int      @default(5)
+  comment    String   @db.Text
+  isApproved Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  // Relations
+  student User    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course  Course? @relation(fields: [courseId], references: [id], onDelete: SetNull)
+
+  @@map("testimonials")
+}
