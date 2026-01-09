@@ -97,7 +97,7 @@ model Course {
   certificates         Certificate[]
   testimonials         Testimonial[]
   materials            CourseMaterial[]
-  coupons              Coupon[]
+  couponCourses        CouponCourse[]
   companyPackages      CompanyPackageCourse[]
 
   @@map("courses")
@@ -368,11 +368,12 @@ model Payment {
   currency          String        @default("BRL")
   status            PaymentStatus @default(PENDING)
   paymentMethod     PaymentMethod?
-  stripePaymentId   String?       @unique
-  stripeSessionId   String?       @unique
-  paidAt            DateTime?
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
+  stripePaymentId      String?       @unique
+  stripeSessionId      String?       @unique
+  abacatePayBillingId  String?       @unique
+  paidAt               DateTime?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
 
   // Relations
   enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
@@ -410,15 +411,29 @@ model Coupon {
   validFrom       DateTime  @default(now())
   validUntil      DateTime?
   isActive        Boolean   @default(true)
-  courseId        String?   // Se aplicável a curso específico
+  appliesToAll    Boolean   @default(true) // Se aplica a todos os cursos
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
   // Relations
-  course       Course?       @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  courses      CouponCourse[]
   usages       CouponUsage[]
 
   @@map("coupons")
+}
+
+model CouponCourse {
+  id        String   @id @default(cuid())
+  couponId  String
+  courseId  String
+  createdAt DateTime @default(now())
+
+  // Relations
+  coupon Coupon @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([couponId, courseId])
+  @@map("coupon_courses")
 }
 
 model CouponUsage {

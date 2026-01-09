@@ -18,10 +18,11 @@ import {
   Search,
   Menu,
   X,
-  ChevronLeft,
+  ChevronDown,
   Building2,
   Briefcase,
   UsersRound,
+  Tag,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "./theme-toggle";
@@ -37,6 +38,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const isEmployee = session?.user?.role === "EMPLOYEE";
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isEmpresarialOpen, setIsEmpresarialOpen] = useState(false);
+
+  // Abrir menu empresarial automaticamente se estiver em uma rota empresarial
+  useEffect(() => {
+    if (pathname.startsWith("/admin/empresarial")) {
+      setIsEmpresarialOpen(true);
+    }
+  }, [pathname]);
 
   // Detectar se é mobile
   useEffect(() => {
@@ -72,8 +81,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { href: "/admin/enrollments", label: "Aprovações", icon: CheckSquare },
     { href: "/admin/students", label: "Alunos", icon: Users },
     { href: "/admin/admins", label: "Administradores", icon: UserCog },
+    { href: "/admin/coupons", label: "Cupons de Desconto", icon: Tag },
     { href: "/admin/certificate-templates", label: "Templates de Certificado", icon: Award },
-    // Área Empresarial
+  ];
+
+  const empresarialLinks = [
     { href: "/admin/empresarial/empresas", label: "Empresas", icon: Building2 },
     { href: "/admin/empresarial/funcionarios", label: "Funcionários", icon: UsersRound },
     { href: "/admin/empresarial/treinamentos", label: "Treinamentos", icon: Briefcase },
@@ -143,6 +155,60 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                 </Link>
               );
             })}
+
+            {/* Menu Empresarial Colapsável - apenas para admin */}
+            {isAdmin && (
+              <div className="pt-2">
+                <Button
+                  variant={pathname.startsWith("/admin/empresarial") ? "secondary" : "ghost"}
+                  className={cn(
+                    "w-full justify-between text-sm lg:text-base h-10 lg:h-11",
+                    pathname.startsWith("/admin/empresarial") && "bg-primary/10 text-primary"
+                  )}
+                  onClick={() => setIsEmpresarialOpen(!isEmpresarialOpen)}
+                >
+                  <div className="flex items-center">
+                    <Building2 className="mr-2 h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">Empresarial</span>
+                  </div>
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 transition-transform duration-200",
+                      isEmpresarialOpen && "rotate-180"
+                    )}
+                  />
+                </Button>
+
+                {/* Sub-menu empresarial */}
+                <div
+                  className={cn(
+                    "overflow-hidden transition-all duration-200 ease-in-out",
+                    isEmpresarialOpen ? "max-h-48 opacity-100" : "max-h-0 opacity-0"
+                  )}
+                >
+                  <div className="pl-4 pt-1 space-y-1">
+                    {empresarialLinks.map((link) => {
+                      const Icon = link.icon;
+                      const isActive = pathname === link.href;
+                      return (
+                        <Link key={link.href} href={link.href}>
+                          <Button
+                            variant={isActive ? "secondary" : "ghost"}
+                            className={cn(
+                              "w-full justify-start text-sm h-9 lg:h-10",
+                              isActive && "bg-primary/10 text-primary"
+                            )}
+                          >
+                            <Icon className="mr-2 h-4 w-4 flex-shrink-0" />
+                            <span className="truncate">{link.label}</span>
+                          </Button>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
           </nav>
 
           {/* User Info */}

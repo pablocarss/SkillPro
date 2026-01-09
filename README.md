@@ -45,23 +45,27 @@ SkillPro é uma plataforma de ensino online completa que permite:
 - Páginas protegidas por middleware
 - Sessões seguras
 
-### Sistema de Pagamentos (Stripe)
+### Sistema de Pagamentos (AbacatePay)
 - **Cursos Gratuitos**: Inscrição com aprovação do admin
-- **Cursos Pagos**: Checkout integrado com Stripe
+- **Cursos Pagos**: Checkout integrado com AbacatePay
+- **PIX Instantâneo**: Pagamento com aprovação imediata
+- **Cartão de Crédito**: Visa, Mastercard, Elo
 - **Cupons de Desconto**: Sistema completo de cupons promocionais
-- Processamento seguro de pagamentos com cartão de crédito
 - Webhook para confirmação automática de pagamentos
 - Aprovação automática após pagamento confirmado
-- Páginas de sucesso e cancelamento personalizadas
-- Ambiente de teste completo com cartões de teste
+- Ambiente de teste e produção
 
 ### Sistema de Cupons de Desconto
 - Criação de cupons com código personalizado
-- Tipos de desconto: percentual ou valor fixo
-- Data de validade configurável
+- Tipos de desconto: **percentual (%)** ou **valor fixo (R$)**
+- **Aplicável a todos os cursos ou cursos específicos**
+- Seleção múltipla de cursos por cupom
+- Data de validade configurável (início e fim)
 - Limite de usos por cupom
+- Valor mínimo de compra
 - Validação em tempo real no checkout
 - Histórico de uso de cupons
+- Toggle de ativação/desativação rápida
 
 ### Catálogo Público de Cursos
 - Listagem completa de cursos disponíveis
@@ -181,15 +185,16 @@ O SkillPro oferece um módulo completo para treinamentos corporativos:
 - **pizzip** - Manipulação de arquivos .docx
 
 ### Pagamentos
-- **Stripe** - Gateway de pagamentos internacional
-- **Stripe Checkout** - Interface de pagamento hospedada
+- **AbacatePay** - Gateway de pagamentos brasileiro
+- **PIX** - Pagamento instantâneo
+- **Cartão de Crédito** - Visa, Mastercard, Elo
 - **Webhooks** - Confirmação automática de pagamentos
 
 ### Segurança
 - **SHA-256** - Hash de certificados e assinaturas digitais
 - **crypto** (Node.js) - Criptografia nativa
 - **bcrypt** - Hash seguro de senhas
-- **Stripe Webhook Signatures** - Validação de eventos do Stripe
+- **Webhook Signatures** - Validação de eventos de pagamento
 
 ## Pré-requisitos
 
@@ -279,19 +284,20 @@ MINIO_ACCESS_KEY="skillpro"
 MINIO_SECRET_KEY="skillpro123"
 MINIO_BUCKET="skillpro"
 
-# Stripe (Pagamentos)
-STRIPE_SECRET_KEY="sk_test_..."
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_test_..."
-STRIPE_WEBHOOK_SECRET="whsec_..."
-NEXT_PUBLIC_URL="http://localhost:3000"
+# AbacatePay (Pagamentos)
+ABACATEPAY_API_KEY="abc_dev_..."
+ABACATEPAY_WEBHOOK_SECRET="webh_dev_..."
+ABACATEPAY_DEV_MODE="true"
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ```
 
-> **Nota:** Para obter suas chaves do Stripe:
-> 1. Crie uma conta em [stripe.com](https://stripe.com)
-> 2. Acesse [Dashboard → API Keys](https://dashboard.stripe.com/test/apikeys)
-> 3. Configure o webhook em [Dashboard → Webhooks](https://dashboard.stripe.com/test/webhooks)
->    - URL: `http://localhost:3000/api/webhooks/stripe`
->    - Eventos: `checkout.session.completed`, `checkout.session.expired`
+> **Nota:** Para obter suas chaves do AbacatePay:
+> 1. Crie uma conta em [abacatepay.com](https://abacatepay.com)
+> 2. Acesse o Dashboard para obter as chaves de API
+> 3. Configure o webhook no Dashboard:
+>    - URL: `https://seu-dominio.com/api/webhooks/abacatepay?webhookSecret=SEU_SECRET`
+>    - Eventos: `billing.paid`
+> 4. Para desenvolvimento local, use ngrok para expor sua URL
 
 ### MinIO Console
 
@@ -384,29 +390,22 @@ Senha: student123
 
 ### Testando Pagamentos (Ambiente de Desenvolvimento)
 
-Use os cartões de teste do Stripe:
+O AbacatePay oferece modo de desenvolvimento para testes:
 
-```
-Cartão de Sucesso:
-Número: 4242 4242 4242 4242
-Data: Qualquer data futura (ex: 12/25)
-CVC: Qualquer 3 dígitos (ex: 123)
+1. Configure `ABACATEPAY_DEV_MODE="true"` no `.env`
+2. Use ngrok para expor sua URL local:
+   ```bash
+   docker-compose up -d  # Inclui ngrok
+   ```
+3. Configure a URL do ngrok no `.env`:
+   ```
+   NEXT_PUBLIC_APP_URL="https://seu-tunnel.ngrok-free.dev"
+   ```
+4. Configure o webhook no dashboard do AbacatePay
 
-Cartão Recusado:
-Número: 4000 0000 0000 0002
-
-Cartão que Requer Autenticação:
-Número: 4000 0025 0000 3155
-```
-
-Para testes completos, execute:
-```bash
-node test-stripe.js           # Testar conexão com Stripe
-node test-checkout-flow.js    # Testar fluxo completo de checkout
-node create-test-student.js   # Criar aluno de teste limpo
-```
-
-Veja o guia completo em: [TESTE-FLUXO-COMPRA.md](./TESTE-FLUXO-COMPRA.md)
+**Métodos de pagamento disponíveis:**
+- **PIX**: Aprovação instantânea via QR Code
+- **Cartão de Crédito**: Visa, Mastercard, Elo
 
 ### Verificação Pública de Certificado
 
@@ -443,10 +442,11 @@ SkillPro/
 │   │   │   │   └── [courseId]/materials/ # Materiais do curso
 │   │   │   ├── lessons/      # APIs de aulas
 │   │   │   │   └── [lessonId]/materials/ # Materiais da aula
+│   │   │   ├── payments/     # APIs de pagamento (AbacatePay)
 │   │   │   ├── treinamentos/ # APIs de treinamentos
 │   │   │   ├── upload/       # Upload de arquivos
 │   │   │   ├── video/        # Streaming de vídeo
-│   │   │   └── webhooks/     # Webhooks (Stripe)
+│   │   │   └── webhooks/     # Webhooks (AbacatePay)
 │   │   ├── checkout/         # Páginas de checkout
 │   │   ├── cursos/           # Detalhes públicos de cursos
 │   │   ├── dashboard/        # Dashboard do aluno
@@ -471,6 +471,7 @@ SkillPro/
 │   │   ├── material-upload.tsx # Upload de materiais
 │   │   └── video-player.tsx  # Player de vídeo
 │   └── lib/                  # Bibliotecas e utilitários
+│       ├── abacatepay.ts     # Cliente AbacatePay
 │       ├── certificate-generator.ts # Gerador de certificados
 │       ├── video-utils.ts    # Utilitários de vídeo
 │       ├── docx-to-pdf.ts    # Conversão DOCX→PDF
@@ -494,20 +495,14 @@ SkillPro/
 
 ## Scripts de Teste
 
-O projeto inclui scripts prontos para testar todas as funcionalidades:
+O projeto inclui scripts prontos para testar funcionalidades:
 
 ```bash
-# Testar conexão com Stripe
-node test-stripe.js
-
-# Testar fluxo completo de checkout
-node test-checkout-flow.js
-
 # Criar aluno de teste limpo (sem inscrições)
 node create-test-student.js
 
-# Verificar estado do fluxo de compra
-node verify-purchase-flow.js
+# Popular banco com dados de teste
+npx tsx scripts/seed.ts
 ```
 
 ## Contribuindo

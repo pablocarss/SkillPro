@@ -23,9 +23,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Buscar cupom
+    // Buscar cupom com cursos associados
     const coupon = await prisma.coupon.findUnique({
       where: { code: code.toUpperCase() },
+      include: {
+        courses: {
+          select: {
+            courseId: true,
+          },
+        },
+      },
     });
 
     if (!coupon) {
@@ -67,12 +74,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Verificar se é para curso específico
-    if (coupon.courseId && coupon.courseId !== courseId) {
-      return NextResponse.json(
-        { error: "Este cupom não é válido para este curso" },
-        { status: 400 }
-      );
+    // Verificar se é para curso específico (se não aplica a todos)
+    if (!coupon.appliesToAll && courseId) {
+      const allowedCourseIds = coupon.courses.map((c) => c.courseId);
+      if (allowedCourseIds.length > 0 && !allowedCourseIds.includes(courseId)) {
+        return NextResponse.json(
+          { error: "Este cupom não é válido para este curso" },
+          { status: 400 }
+        );
+      }
     }
 
     // Verificar valor mínimo de compra
@@ -101,6 +111,7 @@ export async function POST(req: NextRequest) {
     // Cupom válido!
     return NextResponse.json({
       coupon: {
+        id: coupon.id,
         code: coupon.code,
         discountType: coupon.discountType,
         discountValue: coupon.discountValue,

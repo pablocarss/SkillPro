@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import {
   Loader2,
   CreditCard,
@@ -23,7 +25,9 @@ import {
   ArrowLeft,
   Tag,
   X,
-  Percent
+  Percent,
+  QrCode,
+  Smartphone
 } from "lucide-react";
 import Image from "next/image";
 
@@ -48,11 +52,14 @@ interface CouponData {
   description?: string;
 }
 
+type PaymentMethod = "PIX" | "CARD";
+
 export function CheckoutClient({ course, user }: CheckoutClientProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<CouponData | null>(null);
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("PIX");
   const router = useRouter();
   const { toast } = useToast();
 
@@ -122,12 +129,13 @@ export function CheckoutClient({ course, user }: CheckoutClientProps) {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/create-checkout-session", {
+      const response = await fetch("/api/payments/abacatepay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           courseId: course.id,
-          couponCode: appliedCoupon?.code
+          couponCode: appliedCoupon?.code,
+          paymentMethod: paymentMethod
         }),
       });
 
@@ -136,12 +144,12 @@ export function CheckoutClient({ course, user }: CheckoutClientProps) {
         throw new Error(error.error || "Erro ao processar pagamento");
       }
 
-      const { url } = await response.json();
+      const { paymentUrl } = await response.json();
 
-      if (url) {
-        window.location.href = url;
+      if (paymentUrl) {
+        window.location.href = paymentUrl;
       } else {
-        throw new Error("URL de checkout não recebida");
+        throw new Error("URL de pagamento não recebida");
       }
     } catch (error) {
       console.error("Erro no checkout:", error);
@@ -162,10 +170,10 @@ export function CheckoutClient({ course, user }: CheckoutClientProps) {
         <div className="max-w-4xl mx-auto">
           {/* Botão Voltar */}
           <div className="mb-4 sm:mb-6">
-            <Link href={`/cursos/${course.id}`}>
+            <Link href="/dashboard/catalog">
               <Button variant="ghost" size="sm" className="gap-2">
                 <ArrowLeft className="h-4 w-4" />
-                Voltar para o curso
+                Voltar para o catálogo
               </Button>
             </Link>
           </div>
@@ -351,7 +359,7 @@ export function CheckoutClient({ course, user }: CheckoutClientProps) {
                           Compra 100% Segura
                         </p>
                         <p className="text-xs sm:text-sm text-green-700 dark:text-green-300">
-                          Pagamento processado com segurança pelo Stripe. Seus dados de cartão são
+                          Pagamento processado com segurança pelo AbacatePay. Seus dados são
                           criptografados e nunca armazenados em nossos servidores.
                         </p>
                       </div>
@@ -362,6 +370,9 @@ export function CheckoutClient({ course, user }: CheckoutClientProps) {
                       </Badge>
                       <Badge variant="outline" className="border-green-600 text-green-700 dark:text-green-300 text-xs">
                         Sem Mensalidades
+                      </Badge>
+                      <Badge variant="outline" className="border-green-600 text-green-700 dark:text-green-300 text-xs">
+                        PIX Instantâneo
                       </Badge>
                     </div>
                   </div>
@@ -388,7 +399,7 @@ export function CheckoutClient({ course, user }: CheckoutClientProps) {
                     <div>
                       <p className="font-medium text-xs sm:text-sm mb-1">Quais formas de pagamento são aceitas?</p>
                       <p className="text-xs sm:text-sm text-muted-foreground">
-                        Aceitamos cartões de crédito e débito (Visa, Mastercard, American Express, etc).
+                        Aceitamos PIX (aprovação instantânea) e cartões de crédito (Visa, Mastercard, Elo).
                       </p>
                     </div>
                     <div>
@@ -450,23 +461,57 @@ export function CheckoutClient({ course, user }: CheckoutClientProps) {
                     </div>
                   </div>
 
-                  {/* Métodos de Pagamento Aceitos */}
-                  <div className="bg-muted/50 rounded-lg p-2 sm:p-3 space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground">Métodos aceitos:</p>
-                    <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
-                      <Badge variant="outline" className="text-xs">
-                        <CreditCard className="h-3 w-3 mr-1" />
-                        Visa
-                      </Badge>
-                      <Badge variant="outline" className="text-xs">
-                        <CreditCard className="h-3 w-3 mr-1" />
-                        Mastercard
-                      </Badge>
-                      <Badge variant="outline" className="text-xs">
-                        <CreditCard className="h-3 w-3 mr-1" />
-                        Amex
-                      </Badge>
-                    </div>
+                  {/* Seleção de Método de Pagamento */}
+                  <div className="space-y-3">
+                    <p className="text-sm font-medium">Forma de Pagamento</p>
+                    <RadioGroup
+                      value={paymentMethod}
+                      onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}
+                      className="space-y-2"
+                    >
+                      <div
+                        className={`flex items-center space-x-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                          paymentMethod === "PIX"
+                            ? "border-primary bg-primary/5"
+                            : "border-muted hover:border-primary/50"
+                        }`}
+                        onClick={() => setPaymentMethod("PIX")}
+                      >
+                        <RadioGroupItem value="PIX" id="pix" />
+                        <Label htmlFor="pix" className="flex items-center gap-3 cursor-pointer flex-1">
+                          <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                            <QrCode className="h-5 w-5 text-green-600" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">PIX</p>
+                            <p className="text-xs text-muted-foreground">Aprovação instantânea</p>
+                          </div>
+                          <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                            Recomendado
+                          </Badge>
+                        </Label>
+                      </div>
+
+                      <div
+                        className={`flex items-center space-x-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                          paymentMethod === "CARD"
+                            ? "border-primary bg-primary/5"
+                            : "border-muted hover:border-primary/50"
+                        }`}
+                        onClick={() => setPaymentMethod("CARD")}
+                      >
+                        <RadioGroupItem value="CARD" id="card" />
+                        <Label htmlFor="card" className="flex items-center gap-3 cursor-pointer flex-1">
+                          <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                            <CreditCard className="h-5 w-5 text-blue-600" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">Cartão de Crédito</p>
+                            <p className="text-xs text-muted-foreground">Visa, Mastercard, Elo</p>
+                          </div>
+                        </Label>
+                      </div>
+                    </RadioGroup>
                   </div>
 
                   {/* Botão de Checkout */}
@@ -483,17 +528,21 @@ export function CheckoutClient({ course, user }: CheckoutClientProps) {
                       </>
                     ) : (
                       <>
-                        <Lock className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
-                        Pagar com Segurança
+                        {paymentMethod === "PIX" ? (
+                          <QrCode className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                        ) : (
+                          <CreditCard className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                        )}
+                        Pagar com {paymentMethod === "PIX" ? "PIX" : "Cartão"}
                       </>
                     )}
                   </Button>
 
                   {/* Botão Voltar */}
-                  <Link href={`/cursos/${course.id}`} className="block">
+                  <Link href="/dashboard/catalog" className="block">
                     <Button variant="outline" className="w-full h-10 sm:h-11">
                       <ArrowLeft className="mr-2 h-4 w-4" />
-                      Voltar para o curso
+                      Voltar para o catálogo
                     </Button>
                   </Link>
 
@@ -502,7 +551,7 @@ export function CheckoutClient({ course, user }: CheckoutClientProps) {
                     <div className="flex items-start gap-2 text-xs text-muted-foreground">
                       <ShieldCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-500 flex-shrink-0 mt-0.5" />
                       <p>
-                        Pagamento processado de forma segura pelo Stripe
+                        Pagamento processado de forma segura pelo AbacatePay
                       </p>
                     </div>
                     <div className="flex items-start gap-2 text-xs text-muted-foreground">
@@ -511,6 +560,14 @@ export function CheckoutClient({ course, user }: CheckoutClientProps) {
                         Seus dados nunca são armazenados
                       </p>
                     </div>
+                    {paymentMethod === "PIX" && (
+                      <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                        <Smartphone className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-500 flex-shrink-0 mt-0.5" />
+                        <p>
+                          Pague com qualquer banco usando o QR Code
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   {/* Termos */}

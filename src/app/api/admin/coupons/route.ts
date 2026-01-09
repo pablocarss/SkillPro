@@ -17,10 +17,14 @@ export async function GET() {
 
     const coupons = await prisma.coupon.findMany({
       include: {
-        course: {
-          select: {
-            id: true,
-            title: true,
+        courses: {
+          include: {
+            course: {
+              select: {
+                id: true,
+                title: true,
+              },
+            },
           },
         },
         _count: {
@@ -67,7 +71,8 @@ export async function POST(req: NextRequest) {
       minPurchase,
       validFrom,
       validUntil,
-      courseId,
+      courseIds, // Array de IDs de cursos
+      appliesToAll,
       isActive,
     } = data;
 
@@ -91,6 +96,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Criar cupom com cursos associados
     const coupon = await prisma.coupon.create({
       data: {
         code: code.toUpperCase(),
@@ -101,8 +107,27 @@ export async function POST(req: NextRequest) {
         minPurchase: minPurchase ? parseFloat(minPurchase) : null,
         validFrom: validFrom ? new Date(validFrom) : new Date(),
         validUntil: validUntil ? new Date(validUntil) : null,
-        courseId: courseId || null,
+        appliesToAll: appliesToAll !== false,
         isActive: isActive !== false,
+        courses: {
+          create: appliesToAll === false && courseIds?.length > 0
+            ? courseIds.map((courseId: string) => ({
+                courseId,
+              }))
+            : [],
+        },
+      },
+      include: {
+        courses: {
+          include: {
+            course: {
+              select: {
+                id: true,
+                title: true,
+              },
+            },
+          },
+        },
       },
     });
 
