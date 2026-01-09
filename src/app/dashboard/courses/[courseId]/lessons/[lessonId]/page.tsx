@@ -5,6 +5,31 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CompleteLessonButton } from "./complete-lesson-button";
+import { VideoPlayer } from "@/components/video-player";
+import { ExternalVideoPlayer } from "@/components/external-video-player";
+import { isExternalVideoUrl } from "@/lib/video-utils";
+import { FileText, FileSpreadsheet, Presentation, Archive, File, Download } from "lucide-react";
+
+const FILE_ICONS: Record<string, string> = {
+  pdf: "text-red-500",
+  doc: "text-blue-500",
+  docx: "text-blue-500",
+  xls: "text-green-500",
+  xlsx: "text-green-500",
+  ppt: "text-orange-500",
+  pptx: "text-orange-500",
+  zip: "text-yellow-500",
+  rar: "text-yellow-500",
+  "7z": "text-yellow-500",
+  epub: "text-purple-500",
+};
+
+function formatFileSize(bytes: number | null): string {
+  if (!bytes) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 export default async function LessonViewPage({
   params,
@@ -45,6 +70,9 @@ export default async function LessonViewPage({
         where: {
           studentId: user.id,
         },
+      },
+      materials: {
+        orderBy: { order: "asc" },
       },
     },
   });
@@ -93,13 +121,19 @@ export default async function LessonViewPage({
           </CardHeader>
           <CardContent>
             {lesson.videoUrl && (
-              <div className="mb-6 aspect-video w-full overflow-hidden rounded-lg bg-gray-100">
-                <video
-                  src={lesson.videoUrl}
-                  className="h-full w-full"
-                  controls
-                  title={lesson.title}
-                />
+              <div className="mb-6">
+                {/* Detecta se é URL externa (YouTube, Vimeo, etc) ou vídeo do MinIO */}
+                {isExternalVideoUrl(lesson.videoUrl) ? (
+                  <ExternalVideoPlayer
+                    videoUrl={lesson.videoUrl}
+                    title={lesson.title}
+                  />
+                ) : (
+                  <VideoPlayer
+                    lessonId={lessonId}
+                    userName={user.name}
+                  />
+                )}
               </div>
             )}
             <div className="prose max-w-none">
@@ -107,6 +141,51 @@ export default async function LessonViewPage({
             </div>
           </CardContent>
         </Card>
+
+        {lesson.materials.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Material de Apoio</CardTitle>
+              <CardDescription>Arquivos e recursos complementares para esta aula</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {lesson.materials.map((material) => (
+                  <div
+                    key={material.id}
+                    className="flex items-center justify-between rounded-lg border bg-gray-50 p-3"
+                  >
+                    <div className="flex items-center gap-3">
+                      <FileText className={`h-5 w-5 ${FILE_ICONS[material.fileType.toLowerCase()] || "text-gray-500"}`} />
+                      <div>
+                        <p className="font-medium text-gray-900">{material.title}</p>
+                        {material.description && (
+                          <p className="text-sm text-gray-500">{material.description}</p>
+                        )}
+                        <p className="text-xs text-gray-400">
+                          {material.fileType.toUpperCase()}
+                          {material.fileSize && ` - ${formatFileSize(material.fileSize)}`}
+                          {material.isExternal && " (Link externo)"}
+                        </p>
+                      </div>
+                    </div>
+                    <a
+                      href={material.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      download={!material.isExternal}
+                    >
+                      <Button variant="outline" size="sm">
+                        <Download className="mr-2 h-4 w-4" />
+                        Baixar
+                      </Button>
+                    </a>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {lesson.quizzes.length > 0 && (
           <div>

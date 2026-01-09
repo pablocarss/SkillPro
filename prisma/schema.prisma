@@ -10,6 +10,8 @@ datasource db {
 enum Role {
   ADMIN
   STUDENT
+  COMPANY_ADMIN
+  EMPLOYEE
 }
 
 enum EnrollmentStatus {
@@ -41,7 +43,9 @@ model User {
   cpf         String?   @unique
   birthDate   DateTime?
   phone       String?
+  position    String?   // Cargo/função do funcionário
   role        Role      @default(STUDENT)
+  companyId   String?   // Para funcionários vinculados a empresa
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -55,6 +59,15 @@ model User {
   createdTemplates         CertificateTemplate[]   @relation("TemplateCreator")
   lessonProgress           LessonProgress[]
   testimonials             Testimonial[]
+  // Treinamentos corporativos
+  company                  Company?                @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  trainingEnrollments      TrainingEnrollment[]
+  trainingProgress         TrainingLessonProgress[]
+  trainingQuizAttempts     TrainingQuizAttempt[]
+  trainingExamAttempts     TrainingExamAttempt[]
+  trainingCertificates     TrainingCertificate[]
+  createdTrainings         Training[]              @relation("TrainingCreator")
+  createdTrainingCerts     TrainingCertificate[]   @relation("TrainingCertCreator")
 
   @@map("users")
 }
@@ -76,15 +89,41 @@ model Course {
   updatedAt            DateTime @updatedAt
 
   // Relations
-  createdBy            User                 @relation("CourseCreator", fields: [createdById], references: [id], onDelete: Cascade)
-  certificateTemplate  CertificateTemplate? @relation(fields: [certificateTemplateId], references: [id])
+  createdBy            User                   @relation("CourseCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  certificateTemplate  CertificateTemplate?   @relation(fields: [certificateTemplateId], references: [id])
   modules              Module[]
   enrollments          Enrollment[]
   finalExam            FinalExam?
   certificates         Certificate[]
   testimonials         Testimonial[]
+  materials            CourseMaterial[]
+  coupons              Coupon[]
+  companyPackages      CompanyPackageCourse[]
 
   @@map("courses")
+}
+
+model CourseMaterial {
+  id          String   @id @default(cuid())
+  title       String
+  description String?  @db.Text
+  fileUrl     String   // URL do arquivo (MinIO ou externa)
+  fileType    String   // pdf, doc, docx, xls, xlsx, ppt, pptx, zip, etc
+  fileSize    Int?     // Tamanho em bytes
+  isExternal  Boolean  @default(false) // Se é link externo ou upload
+  courseId    String?  // Material do curso (opcional)
+  moduleId    String?  // Material do módulo (opcional)
+  lessonId    String?  // Material da aula (opcional)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  course Course? @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  module Module? @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  lesson Lesson? @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@map("course_materials")
 }
 
 model Module {
@@ -97,8 +136,9 @@ model Module {
   updatedAt   DateTime @updatedAt
 
   // Relations
-  course  Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  lessons Lesson[]
+  course    Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons   Lesson[]
+  materials CourseMaterial[]
 
   @@map("modules")
 }
@@ -115,9 +155,10 @@ model Lesson {
   updatedAt   DateTime @updatedAt
 
   // Relations
-  module   Module             @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  quizzes  Quiz[]
-  progress LessonProgress[]
+  module    Module             @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  quizzes   Quiz[]
+  progress  LessonProgress[]
+  materials CourseMaterial[]
 
   @@map("lessons")
 }
@@ -353,4 +394,472 @@ model Testimonial {
   course  Course? @relation(fields: [courseId], references: [id], onDelete: SetNull)
 
   @@map("testimonials")
+}
+
+// ================== CUPONS DE DESCONTO ==================
+
+model Coupon {
+  id              String    @id @default(cuid())
+  code            String    @unique
+  description     String?
+  discountType    String    @default("PERCENTAGE") // PERCENTAGE or FIXED
+  discountValue   Float     // Valor do desconto (% ou R$)
+  maxUses         Int?      // Limite de uso (null = ilimitado)
+  usedCount       Int       @default(0)
+  minPurchase     Float?    // Valor mínimo de compra
+  validFrom       DateTime  @default(now())
+  validUntil      DateTime?
+  isActive        Boolean   @default(true)
+  courseId        String?   // Se aplicável a curso específico
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  course       Course?       @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  usages       CouponUsage[]
+
+  @@map("coupons")
+}
+
+model CouponUsage {
+  id         String   @id @default(cuid())
+  couponId   String
+  userId     String
+  orderId    String?  // ID do pagamento/order
+  usedAt     DateTime @default(now())
+
+  // Relations
+  coupon Coupon @relation(fields: [couponId], references: [id], onDelete: Cascade)
+
+  @@unique([couponId, userId, orderId])
+  @@map("coupon_usages")
+}
+
+// ================== ÁREA EMPRESARIAL ==================
+
+model Company {
+  id            String   @id @default(cuid())
+  name          String
+  cnpj          String   @unique
+  email         String
+  phone         String?
+  address       String?
+  logo          String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  admins                  CompanyAdmin[]
+  employees               CompanyEmployee[]
+  packages                CompanyPackage[]
+  users                   User[]
+  trainings               Training[]                      // Legacy: treinamentos criados diretamente
+  trainingCompanies       TrainingCompany[]               // N:N empresas vinculadas a treinamentos
+  trainingCertTemplates   TrainingCertificateTemplate[]   // Templates de certificado por empresa
+
+  @@map("companies")
+}
+
+model CompanyAdmin {
+  id          String   @id @default(cuid())
+  userId      String
+  companyId   String
+  isOwner     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  // Relations
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, companyId])
+  @@map("company_admins")
+}
+
+model CompanyEmployee {
+  id          String    @id @default(cuid())
+  name        String
+  email       String
+  cpf         String?
+  userId      String?   // Link com usuário após cadastro
+  companyId   String
+  isActive    Boolean   @default(true)
+  invitedAt   DateTime  @default(now())
+  acceptedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  company            Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  packageEnrollments CompanyPackageEnrollment[]
+
+  @@unique([email, companyId])
+  @@map("company_employees")
+}
+
+model CompanyPackage {
+  id              String   @id @default(cuid())
+  companyId       String
+  name            String
+  description     String?  @db.Text
+  maxEmployees    Int      // Limite de funcionários
+  price           Float
+  validMonths     Int      @default(12) // Validade em meses
+  isActive        Boolean  @default(true)
+  startDate       DateTime @default(now())
+  endDate         DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  company     Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  courses     CompanyPackageCourse[]
+  enrollments CompanyPackageEnrollment[]
+  payments    CompanyPayment[]
+
+  @@map("company_packages")
+}
+
+model CompanyPackageCourse {
+  id        String   @id @default(cuid())
+  packageId String
+  courseId  String
+  createdAt DateTime @default(now())
+
+  // Relations
+  package CompanyPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  course  Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([packageId, courseId])
+  @@map("company_package_courses")
+}
+
+model CompanyPackageEnrollment {
+  id          String   @id @default(cuid())
+  packageId   String
+  employeeId  String
+  enrolledAt  DateTime @default(now())
+  completedAt DateTime?
+
+  // Relations
+  package  CompanyPackage  @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  employee CompanyEmployee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([packageId, employeeId])
+  @@map("company_package_enrollments")
+}
+
+model CompanyPayment {
+  id              String        @id @default(cuid())
+  packageId       String
+  amount          Float
+  status          PaymentStatus @default(PENDING)
+  paymentMethod   PaymentMethod?
+  stripePaymentId String?       @unique
+  paidAt          DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  package CompanyPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@map("company_payments")
+}
+
+// ================== TREINAMENTOS CORPORATIVOS ==================
+
+model Training {
+  id                   String   @id @default(cuid())
+  title                String
+  description          String   @db.Text
+  thumbnail            String?
+  duration             String?
+  level                String?
+  passingScore         Int      @default(70)
+  isPublished          Boolean  @default(false)
+  companyId            String?  // Opcional: permite criar treinamento sem empresa
+  createdById          String
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  // Relations
+  company              Company?               @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  createdBy            User                   @relation("TrainingCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  modules              TrainingModule[]
+  enrollments          TrainingEnrollment[]
+  finalExam            TrainingFinalExam?
+  certificates         TrainingCertificate[]
+  materials            TrainingMaterial[]
+  trainingCompanies    TrainingCompany[]               // N:N empresas vinculadas
+  certificateTemplates TrainingCertificateTemplate[]   // Templates por empresa
+
+  @@map("trainings")
+}
+
+model TrainingCompany {
+  id          String   @id @default(cuid())
+  trainingId  String
+  companyId   String
+  createdAt   DateTime @default(now())
+
+  // Relations
+  training    Training @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([trainingId, companyId])
+  @@map("training_companies")
+}
+
+model TrainingCertificateTemplate {
+  id          String   @id @default(cuid())
+  trainingId  String
+  companyId   String
+  templateUrl String   // URL do template .docx no MinIO
+  name        String?  // Nome do template
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  training    Training @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([trainingId, companyId])
+  @@map("training_certificate_templates")
+}
+
+model TrainingModule {
+  id          String   @id @default(cuid())
+  title       String
+  description String?  @db.Text
+  order       Int
+  trainingId  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  training  Training           @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+  lessons   TrainingLesson[]
+  materials TrainingMaterial[]
+
+  @@map("training_modules")
+}
+
+model TrainingLesson {
+  id          String   @id @default(cuid())
+  title       String
+  description String?  @db.Text
+  content     String   @db.Text
+  videoUrl    String?
+  order       Int
+  moduleId    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  module    TrainingModule           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  quizzes   TrainingQuiz[]
+  progress  TrainingLessonProgress[]
+  materials TrainingMaterial[]
+
+  @@map("training_lessons")
+}
+
+model TrainingLessonProgress {
+  id          String    @id @default(cuid())
+  userlId     String
+  lessonId    String
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  user   User           @relation(fields: [userlId], references: [id], onDelete: Cascade)
+  lesson TrainingLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userlId, lessonId])
+  @@map("training_lesson_progress")
+}
+
+model TrainingMaterial {
+  id          String   @id @default(cuid())
+  title       String
+  description String?  @db.Text
+  fileUrl     String
+  fileType    String
+  fileSize    Int?
+  isExternal  Boolean  @default(false)
+  trainingId  String?
+  moduleId    String?
+  lessonId    String?
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  training Training?       @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+  module   TrainingModule? @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  lesson   TrainingLesson? @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@map("training_materials")
+}
+
+model TrainingQuiz {
+  id           String   @id @default(cuid())
+  title        String
+  description  String?  @db.Text
+  lessonId     String
+  passingScore Int      @default(70)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  lesson    TrainingLesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  questions TrainingQuizQuestion[]
+  attempts  TrainingQuizAttempt[]
+
+  @@map("training_quizzes")
+}
+
+model TrainingQuizQuestion {
+  id        String   @id @default(cuid())
+  question  String   @db.Text
+  quizId    String
+  order     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  quiz    TrainingQuiz         @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  answers TrainingQuizAnswer[]
+
+  @@map("training_quiz_questions")
+}
+
+model TrainingQuizAnswer {
+  id         String   @id @default(cuid())
+  answer     String   @db.Text
+  isCorrect  Boolean  @default(false)
+  questionId String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  question TrainingQuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("training_quiz_answers")
+}
+
+model TrainingQuizAttempt {
+  id        String   @id @default(cuid())
+  userId    String
+  quizId    String
+  score     Float
+  answers   Json
+  passed    Boolean
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz TrainingQuiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@map("training_quiz_attempts")
+}
+
+model TrainingFinalExam {
+  id           String   @id @default(cuid())
+  title        String
+  description  String?  @db.Text
+  trainingId   String   @unique
+  passingScore Int      @default(70)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  training  Training                   @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+  questions TrainingFinalExamQuestion[]
+  attempts  TrainingExamAttempt[]
+
+  @@map("training_final_exams")
+}
+
+model TrainingFinalExamQuestion {
+  id         String   @id @default(cuid())
+  question   String   @db.Text
+  examId     String
+  order      Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  exam    TrainingFinalExam         @relation(fields: [examId], references: [id], onDelete: Cascade)
+  answers TrainingFinalExamAnswer[]
+
+  @@map("training_final_exam_questions")
+}
+
+model TrainingFinalExamAnswer {
+  id         String   @id @default(cuid())
+  answer     String   @db.Text
+  isCorrect  Boolean  @default(false)
+  questionId String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  question TrainingFinalExamQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@map("training_final_exam_answers")
+}
+
+model TrainingExamAttempt {
+  id        String   @id @default(cuid())
+  userId    String
+  examId    String
+  score     Float
+  answers   Json
+  passed    Boolean
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exam TrainingFinalExam @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  @@map("training_exam_attempts")
+}
+
+model TrainingEnrollment {
+  id          String    @id @default(cuid())
+  userId      String
+  trainingId  String
+  enrolledAt  DateTime  @default(now())
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  training Training @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, trainingId])
+  @@map("training_enrollments")
+}
+
+model TrainingCertificate {
+  id               String   @id @default(cuid())
+  certificateHash  String?  @unique @default(cuid())
+  digitalSignature String?
+  userId           String
+  trainingId       String
+  createdById      String
+  issueDate        DateTime @default(now())
+  finalScore       Float
+  pdfUrl           String?
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  training  Training @relation(fields: [trainingId], references: [id], onDelete: Cascade)
+  createdBy User     @relation("TrainingCertCreator", fields: [createdById], references: [id])
+
+  @@unique([userId, trainingId])
+  @@map("training_certificates")
 }

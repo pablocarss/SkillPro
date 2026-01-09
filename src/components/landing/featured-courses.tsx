@@ -29,26 +29,26 @@ export function FeaturedCourses({ courses }: FeaturedCoursesProps) {
   }
 
   return (
-    <section id="cursos" className="py-16 sm:py-20 scroll-mt-20">
+    <section id="cursos" className="py-10 sm:py-16 lg:py-20 scroll-mt-16 sm:scroll-mt-20">
       <div className="container mx-auto px-4">
-        <div className="mb-12 flex flex-col gap-4 text-center sm:flex-row sm:items-end sm:justify-between sm:text-left animate-fade-in-up">
+        <div className="mb-8 sm:mb-12 flex flex-col gap-4 text-center sm:flex-row sm:items-end sm:justify-between sm:text-left animate-fade-in-up">
           <div>
-            <h2 className="text-3xl font-bold text-foreground sm:text-4xl mb-2">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground mb-2">
               Cursos em Destaque
             </h2>
-            <p className="text-lg text-muted-foreground">
+            <p className="text-base sm:text-lg text-muted-foreground">
               Explore nossos cursos mais populares e comece a aprender hoje
             </p>
           </div>
-          <Link href="/cursos">
-            <Button variant="outline" className="group">
+          <Link href="/cursos" className="mx-auto sm:mx-0">
+            <Button variant="outline" className="group text-sm sm:text-base">
               Ver Todos os Cursos
               <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Button>
           </Link>
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {courses.map((course, index) => {
             // Calcular total de aulas
             const lessonsCount = course.modules.reduce(

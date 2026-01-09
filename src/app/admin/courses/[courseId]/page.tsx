@@ -15,9 +15,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
-import { Plus, BookOpen, FileQuestion, ClipboardList, Edit, Trash2 } from "lucide-react";
+import { Plus, BookOpen, FileQuestion, ClipboardList, Edit, Trash2, Files, ChevronDown, ChevronUp } from "lucide-react";
 import Link from "next/link";
 import { VideoUpload } from "@/components/video-upload";
+import { MaterialUpload } from "@/components/material-upload";
 
 interface Module {
   id: string;
@@ -35,6 +36,7 @@ interface Lesson {
   videoUrl: string | null;
   order: number;
   quizzes: Quiz[];
+  materials: Material[];
 }
 
 interface Quiz {
@@ -43,6 +45,16 @@ interface Quiz {
   _count: {
     questions: number;
   };
+}
+
+interface Material {
+  id: string;
+  title: string;
+  description: string | null;
+  fileUrl: string;
+  fileType: string;
+  fileSize: number | null;
+  isExternal: boolean;
 }
 
 interface Course {
@@ -68,6 +80,7 @@ export default function CourseManagementPage({ params }: { params: Promise<{ cou
   const [isLessonDialogOpen, setIsLessonDialogOpen] = useState(false);
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [expandedLessons, setExpandedLessons] = useState<Record<string, boolean>>({});
 
   const [moduleFormData, setModuleFormData] = useState({
     title: "",
@@ -85,11 +98,22 @@ export default function CourseManagementPage({ params }: { params: Promise<{ cou
     fetchCourse();
   }, []);
 
+  const toggleLessonExpanded = (lessonId: string) => {
+    setExpandedLessons(prev => ({
+      ...prev,
+      [lessonId]: !prev[lessonId]
+    }));
+  };
+
   const fetchCourse = async () => {
     try {
       const response = await fetch(`/api/admin/courses/${resolvedParams.courseId}`);
       const data = await response.json();
-      setCourse(data);
+      // Garante que modules seja sempre um array
+      setCourse({
+        ...data,
+        modules: Array.isArray(data.modules) ? data.modules : [],
+      });
     } catch (error) {
       toast({
         variant: "destructive",
@@ -336,16 +360,44 @@ export default function CourseManagementPage({ params }: { params: Promise<{ cou
                                   <div className="mt-2 flex gap-4 text-xs text-gray-600">
                                     {lesson.videoUrl && <span>✓ Com vídeo</span>}
                                     <span>{lesson.quizzes.length} quiz(zes)</span>
+                                    <span>{lesson.materials?.length || 0} material(is)</span>
                                   </div>
                                 </div>
-                                <Link href={`/admin/courses/${resolvedParams.courseId}/modules/${module.id}/lessons/${lesson.id}`}>
-                                  <Button variant="outline" size="sm">
-                                    <FileQuestion className="mr-2 h-4 w-4" />
-                                    Gerenciar Quizzes
+                                <div className="flex gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => toggleLessonExpanded(lesson.id)}
+                                  >
+                                    <Files className="mr-2 h-4 w-4" />
+                                    Materiais
+                                    {expandedLessons[lesson.id] ? (
+                                      <ChevronUp className="ml-1 h-4 w-4" />
+                                    ) : (
+                                      <ChevronDown className="ml-1 h-4 w-4" />
+                                    )}
                                   </Button>
-                                </Link>
+                                  <Link href={`/admin/courses/${resolvedParams.courseId}/modules/${module.id}/lessons/${lesson.id}`}>
+                                    <Button variant="outline" size="sm">
+                                      <FileQuestion className="mr-2 h-4 w-4" />
+                                      Quizzes
+                                    </Button>
+                                  </Link>
+                                </div>
                               </div>
                             </CardHeader>
+                            {expandedLessons[lesson.id] && (
+                              <CardContent className="pt-0">
+                                <div className="border-t pt-4">
+                                  <MaterialUpload
+                                    lessonId={lesson.id}
+                                    materials={lesson.materials || []}
+                                    onMaterialAdded={fetchCourse}
+                                    onMaterialDeleted={fetchCourse}
+                                  />
+                                </div>
+                              </CardContent>
+                            )}
                           </Card>
                         ))}
                       </div>

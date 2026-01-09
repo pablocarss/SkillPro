@@ -3,6 +3,7 @@ import { HeroSection } from "@/components/landing/hero-section";
 import { StatsSection } from "@/components/landing/stats-section";
 import { FeaturedCourses } from "@/components/landing/featured-courses";
 import { TestimonialsSection } from "@/components/landing/testimonials-section";
+import { EnterpriseSection } from "@/components/landing/enterprise-section";
 import { CourseCard } from "@/components/course-card";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookOpen, Award, Users, Clock } from "lucide-react";
@@ -135,6 +136,9 @@ export default async function Home() {
             </div>
           </div>
         </section>
+
+        {/* Enterprise Section */}
+        <EnterpriseSection />
 
         {/* Testimonials */}
         {testimonials.length > 0 && (

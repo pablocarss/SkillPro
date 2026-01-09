@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { generateCertificate } from "@/lib/certificate-generator";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ examId: string }> }) {
   try {
@@ -59,42 +60,22 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // Generate certificate if passed
     let certificateGenerated = false;
     if (passed) {
-      const existingCertificate = await prisma.certificate.findUnique({
-        where: {
-          studentId_courseId: {
-            studentId: session.user.id,
-            courseId: exam.courseId,
-          },
-        },
-      });
+      try {
+        const result = await generateCertificate({
+          studentId: session.user.id,
+          courseId: exam.courseId,
+          createdById: session.user.id,
+        });
 
-      if (!existingCertificate) {
-        // Call the certificate generation API
-        try {
-          const generateResponse = await fetch(
-            `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/certificates/generate`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Cookie: request.headers.get("cookie") || "",
-              },
-              body: JSON.stringify({
-                studentId: session.user.id,
-                courseId: exam.courseId,
-              }),
-            }
-          );
-
-          if (generateResponse.ok) {
-            certificateGenerated = true;
-          }
-        } catch (error) {
-          console.error("Error generating certificate:", error);
-          // Continue even if certificate generation fails
+        if (result.success) {
+          certificateGenerated = true;
+          console.log("Certificate generated successfully for student:", session.user.id);
+        } else {
+          console.error("Failed to generate certificate:", result.error);
         }
-      } else {
-        certificateGenerated = true;
+      } catch (error) {
+        console.error("Error generating certificate:", error);
+        // Continue even if certificate generation fails
       }
     }
 

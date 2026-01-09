@@ -80,9 +80,11 @@ export default function AdminCoursesPage() {
     try {
       const response = await fetch("/api/admin/certificate-templates");
       const data = await response.json();
-      setTemplates(data);
+      // Garante que templates seja sempre um array
+      setTemplates(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error fetching templates:", error);
+      setTemplates([]);
     }
   };
 
@@ -134,68 +136,72 @@ export default function AdminCoursesPage() {
 
   return (
     <div>
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Gerenciar Cursos</h1>
-          <p className="text-gray-600">Crie e gerencie os cursos da plataforma</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Gerenciar Cursos</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">Crie e gerencie os cursos da plataforma</p>
         </div>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" />
               Novo Curso
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto mx-4 sm:mx-auto">
             <DialogHeader>
-              <DialogTitle>Criar Novo Curso</DialogTitle>
-              <DialogDescription>Preencha as informações do curso</DialogDescription>
+              <DialogTitle className="text-lg sm:text-xl">Criar Novo Curso</DialogTitle>
+              <DialogDescription className="text-sm">Preencha as informações do curso</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="title">Título do Curso</Label>
+                <Label htmlFor="title" className="text-sm">Título do Curso</Label>
                 <Input
                   id="title"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   required
+                  className="h-10"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Descrição</Label>
+                <Label htmlFor="description" className="text-sm">Descrição</Label>
                 <Input
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   required
+                  className="h-10"
                 />
               </div>
 
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-3">
                 <div className="space-y-2">
-                  <Label htmlFor="level">Nível</Label>
+                  <Label htmlFor="level" className="text-sm">Nível</Label>
                   <Input
                     id="level"
                     value={formData.level}
                     onChange={(e) => setFormData({ ...formData, level: e.target.value })}
                     required
+                    className="h-10"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="duration">Duração</Label>
+                  <Label htmlFor="duration" className="text-sm">Duração</Label>
                   <Input
                     id="duration"
                     placeholder="Ex: 40 horas"
                     value={formData.duration}
                     onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
                     required
+                    className="h-10"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="passingScore">% Aprovação</Label>
+                  <Label htmlFor="passingScore" className="text-sm">% Aprovação</Label>
                   <Input
                     id="passingScore"
                     type="number"
@@ -204,6 +210,7 @@ export default function AdminCoursesPage() {
                     value={formData.passingScore}
                     onChange={(e) => setFormData({ ...formData, passingScore: e.target.value })}
                     required
+                    className="h-10"
                   />
                 </div>
               </div>
@@ -272,11 +279,11 @@ export default function AdminCoursesPage() {
                 </p>
               </div>
 
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2">
+                <Button type="button" variant="outline" onClick={() => setIsOpen(false)} className="w-full sm:w-auto">
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={isLoading}>
+                <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
                   {isLoading ? "Criando..." : "Criar Curso"}
                 </Button>
               </div>
@@ -285,45 +292,45 @@ export default function AdminCoursesPage() {
         </Dialog>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
         {courses.map((course) => (
           <Link key={course.id} href={`/admin/courses/${course.id}`}>
-            <Card className="cursor-pointer transition-shadow hover:shadow-lg">
-              <CardHeader>
+            <Card className="cursor-pointer transition-shadow hover:shadow-lg h-full">
+              <CardHeader className="p-4 sm:p-6">
                 <div className="flex items-start justify-between gap-2 mb-2">
-                  <div className="flex-1">
-                    <CardTitle>{course.title}</CardTitle>
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-base sm:text-lg truncate">{course.title}</CardTitle>
                   </div>
                   {course.price && course.price > 0 ? (
-                    <Badge className="bg-green-500 hover:bg-green-600 text-white shrink-0">
+                    <Badge className="bg-green-500 hover:bg-green-600 text-white shrink-0 text-xs">
                       R$ {course.price.toFixed(2)}
                     </Badge>
                   ) : (
-                    <Badge variant="secondary" className="shrink-0">Gratuito</Badge>
+                    <Badge variant="secondary" className="shrink-0 text-xs">Gratuito</Badge>
                   )}
                 </div>
-                <CardDescription>{course.description}</CardDescription>
+                <CardDescription className="text-xs sm:text-sm line-clamp-2">{course.description}</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-2 text-sm">
+              <CardContent className="p-4 sm:p-6 pt-0">
+                <div className="space-y-2 text-xs sm:text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Nível:</span>
+                    <span className="text-muted-foreground">Nível:</span>
                     <span className="font-medium">{course.level}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Duração:</span>
+                    <span className="text-muted-foreground">Duração:</span>
                     <span className="font-medium">{course.duration}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-1 text-gray-600">
-                      <BookOpen className="h-4 w-4" />
+                    <span className="flex items-center gap-1 text-muted-foreground">
+                      <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       Módulos:
                     </span>
                     <span className="font-medium">{course._count.modules}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-1 text-gray-600">
-                      <Users className="h-4 w-4" />
+                    <span className="flex items-center gap-1 text-muted-foreground">
+                      <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       Alunos:
                     </span>
                     <span className="font-medium">{course._count.enrollments}</span>

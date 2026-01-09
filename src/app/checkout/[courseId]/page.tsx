@@ -5,18 +5,20 @@ import { prisma } from "@/lib/prisma";
 import { CheckoutClient } from "./checkout-client";
 import { notFound } from "next/navigation";
 
-export default async function CheckoutPage({ params }: { params: { courseId: string } }) {
+export default async function CheckoutPage({ params }: { params: Promise<{ courseId: string }> }) {
+  const { courseId } = await params;
+
   // Verificar autenticação
   const session = await getServerSession(authOptions);
 
   if (!session || !session.user) {
-    redirect(`/login?redirect=/checkout/${params.courseId}`);
+    redirect(`/login?redirect=/checkout/${courseId}`);
   }
 
   // Buscar curso
   const course = await prisma.course.findUnique({
     where: {
-      id: params.courseId,
+      id: courseId,
       isPublished: true,
     },
     select: {
@@ -34,7 +36,7 @@ export default async function CheckoutPage({ params }: { params: { courseId: str
 
   // Verificar se curso é pago
   if (!course.price || course.price <= 0) {
-    redirect(`/cursos/${params.courseId}`);
+    redirect(`/cursos/${courseId}`);
   }
 
   // Verificar se já está inscrito

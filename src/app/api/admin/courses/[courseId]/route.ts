@@ -28,6 +28,9 @@ export async function GET(
                     },
                   },
                 },
+                materials: {
+                  orderBy: { order: "asc" },
+                },
               },
               orderBy: { order: "asc" },
             },

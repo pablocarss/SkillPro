@@ -6,6 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import Link from "next/link";
 import { BookOpen, Clock, Award, CheckCircle2 } from "lucide-react";
 import { redirect } from "next/navigation";
+import { GenerateCertificateButton } from "@/components/generate-certificate-button";
 
 export default async function CourseViewPage({
   params,
@@ -140,6 +141,16 @@ export default async function CourseViewPage({
             </p>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Certificate Generation Section */}
+      <div className="mb-8">
+        <GenerateCertificateButton
+          courseId={courseId}
+          studentId={user.id}
+          hasPassed={!!examAttempt?.passed}
+          hasCertificate={!!certificate}
+        />
       </div>
 
       <div className="space-y-6">

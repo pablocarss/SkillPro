@@ -10,8 +10,11 @@ import Link from "next/link";
 export default async function CheckoutSuccessPage({
   searchParams,
 }: {
-  searchParams: { session_id?: string };
+  searchParams: Promise<{ session_id?: string }>;
 }) {
+  // Await searchParams (required in Next.js 15)
+  await searchParams;
+
   // Verificar autenticação
   const session = await getServerSession(authOptions);
 

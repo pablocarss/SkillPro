@@ -31,13 +31,13 @@ export default async function AllCoursesPage() {
 
       <main>
         {/* Hero */}
-        <section className="bg-gradient-to-br from-primary/5 via-purple-500/5 to-pink-500/5 py-12 sm:py-16">
+        <section className="bg-gradient-to-br from-primary/5 via-purple-500/5 to-pink-500/5 py-8 sm:py-12 lg:py-16">
           <div className="container mx-auto px-4">
             <div className="text-center max-w-3xl mx-auto">
-              <h1 className="text-4xl font-bold text-foreground sm:text-5xl mb-4">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-3 sm:mb-4">
                 Todos os Cursos
               </h1>
-              <p className="text-lg text-muted-foreground">
+              <p className="text-base sm:text-lg text-muted-foreground px-4">
                 Explore nossa coleção completa de {courses.length} cursos e encontre o perfeito para você
               </p>
             </div>
@@ -45,10 +45,10 @@ export default async function AllCoursesPage() {
         </section>
 
         {/* Courses Grid */}
-        <section className="py-12 sm:py-16">
+        <section className="py-8 sm:py-12 lg:py-16">
           <div className="container mx-auto px-4">
             {courses.length > 0 ? (
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {courses.map((course, index) => {
                   const lessonsCount = course.modules.reduce(
                     (total, module) => total + module.lessons.length,
