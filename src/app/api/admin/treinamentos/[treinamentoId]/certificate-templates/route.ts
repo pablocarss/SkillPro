@@ -8,7 +8,7 @@ import path from "path";
 // GET - Listar templates de certificado por empresa
 export async function GET(
   request: NextRequest,
-  { params }: { params: { treinamentoId: string } }
+  { params }: { params: Promise<{ treinamentoId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -17,7 +17,7 @@ export async function GET(
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
-    const { treinamentoId } = params;
+    const { treinamentoId } = await params;
 
     const templates = await prisma.trainingCertificateTemplate.findMany({
       where: { trainingId: treinamentoId },
@@ -48,7 +48,7 @@ export async function GET(
 // POST - Upload de template para empresa específica
 export async function POST(
   request: NextRequest,
-  { params }: { params: { treinamentoId: string } }
+  { params }: { params: Promise<{ treinamentoId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -57,7 +57,7 @@ export async function POST(
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
-    const { treinamentoId } = params;
+    const { treinamentoId } = await params;
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
     const companyId = formData.get("companyId") as string | null;
@@ -184,7 +184,7 @@ export async function POST(
 // DELETE - Remover template de certificado
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { treinamentoId: string } }
+  { params }: { params: Promise<{ treinamentoId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -193,7 +193,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
-    const { treinamentoId } = params;
+    const { treinamentoId } = await params;
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get("companyId");
 

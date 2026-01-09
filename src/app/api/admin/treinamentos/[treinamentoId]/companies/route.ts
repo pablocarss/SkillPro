@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 // GET - Listar empresas vinculadas ao treinamento
 export async function GET(
   request: NextRequest,
-  { params }: { params: { treinamentoId: string } }
+  { params }: { params: Promise<{ treinamentoId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -15,7 +15,7 @@ export async function GET(
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
-    const { treinamentoId } = params;
+    const { treinamentoId } = await params;
 
     // Buscar empresas vinculadas ao treinamento
     const trainingCompanies = await prisma.trainingCompany.findMany({
@@ -87,7 +87,7 @@ export async function GET(
 // POST - Vincular empresa(s) ao treinamento
 export async function POST(
   request: NextRequest,
-  { params }: { params: { treinamentoId: string } }
+  { params }: { params: Promise<{ treinamentoId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -96,7 +96,7 @@ export async function POST(
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
-    const { treinamentoId } = params;
+    const { treinamentoId } = await params;
     const body = await request.json();
     const { companyIds } = body;
 
@@ -165,7 +165,7 @@ export async function POST(
 // DELETE - Desvincular empresa do treinamento
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { treinamentoId: string } }
+  { params }: { params: Promise<{ treinamentoId: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -174,7 +174,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
-    const { treinamentoId } = params;
+    const { treinamentoId } = await params;
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get("companyId");
 

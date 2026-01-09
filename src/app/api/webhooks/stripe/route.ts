@@ -4,14 +4,15 @@ import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2024-12-18.acacia",
+  apiVersion: "2025-12-15.clover",
 });
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
-  const signature = headers().get("stripe-signature");
+  const headersList = await headers();
+  const signature = headersList.get("stripe-signature");
 
   if (!signature) {
     console.error("Stripe signature missing");

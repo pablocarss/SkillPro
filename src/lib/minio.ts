@@ -45,7 +45,7 @@ export async function uploadVideo(
   const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, "_");
   const objectName = `videos/${timestamp}-${sanitizedFileName}`;
 
-  await minioClient.putObject(bucketName, objectName, file, {
+  await minioClient.putObject(bucketName, objectName, file, file.length, {
     "Content-Type": contentType,
   });
 
@@ -88,7 +88,7 @@ export async function uploadFile(
     metadata["Content-Disposition"] = "inline";
   }
 
-  await minioClient.putObject(bucketName, objectName, file, metadata);
+  await minioClient.putObject(bucketName, objectName, file, file.length, metadata);
 
   // Return the URL to access the file
   const url = `http://${process.env.MINIO_ENDPOINT}:${process.env.MINIO_PORT}/${bucketName}/${objectName}`;

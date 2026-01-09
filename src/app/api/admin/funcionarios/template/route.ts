@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
         cell.dataValidation = {
           type: "textLength",
           operator: "greaterThan",
-          formula1: "0",
+          formulae: ["0"],
           showErrorMessage: true,
           errorTitle: "Email obrigatório",
           error: "Por favor, insira um email válido"

@@ -53,7 +53,10 @@ export default async function CheckoutPage({ params }: { params: Promise<{ cours
 
   return (
     <CheckoutClient
-      course={course}
+      course={{
+        ...course,
+        price: course.price!,
+      }}
       user={{
         name: session.user.name || "",
         email: session.user.email || "",
