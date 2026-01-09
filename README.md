@@ -1,11 +1,12 @@
 # SkillPro - Plataforma de Educação Online
 
-Plataforma completa de e-learning desenvolvida com Next.js 15, oferecendo uma experiência moderna e intuitiva para cursos online com sistema de certificação digital.
+Plataforma completa de e-learning desenvolvida com Next.js 15, oferecendo uma experiência moderna e intuitiva para cursos online com sistema de certificação digital e módulo empresarial.
 
 ## Índice
 
 - [Sobre o Projeto](#sobre-o-projeto)
 - [Funcionalidades Principais](#funcionalidades-principais)
+- [Módulo Empresarial](#módulo-empresarial)
 - [Tecnologias Utilizadas](#tecnologias-utilizadas)
 - [Pré-requisitos](#pré-requisitos)
 - [Instalação](#instalação)
@@ -20,7 +21,8 @@ Plataforma completa de e-learning desenvolvida com Next.js 15, oferecendo uma ex
 
 SkillPro é uma plataforma de ensino online completa que permite:
 
-- **Para Administradores**: Criar e gerenciar cursos, módulos, aulas, questionários e provas finais
+- **Para Administradores**: Criar e gerenciar cursos, módulos, aulas, questionários, provas finais e treinamentos empresariais
+- **Para Empresas**: Gerenciar funcionários, atribuir treinamentos corporativos e acompanhar progresso
 - **Para Alunos**: Navegar por catálogo de cursos, assistir videoaulas, fazer avaliações e obter certificados digitais
 - **Para Todos**: Sistema robusto de autenticação, verificação pública de certificados e gestão de perfis
 
@@ -30,6 +32,7 @@ SkillPro é uma plataforma de ensino online completa que permite:
 - Hero section com gradientes animados e design profissional
 - Seção de estatísticas em tempo real (alunos, cursos, certificados)
 - Prévia de 6 cursos em destaque
+- Seção empresarial para treinamentos corporativos
 - Depoimentos de alunos aprovados
 - Design responsivo e otimizado para SEO
 
@@ -45,11 +48,20 @@ SkillPro é uma plataforma de ensino online completa que permite:
 ### Sistema de Pagamentos (Stripe)
 - **Cursos Gratuitos**: Inscrição com aprovação do admin
 - **Cursos Pagos**: Checkout integrado com Stripe
+- **Cupons de Desconto**: Sistema completo de cupons promocionais
 - Processamento seguro de pagamentos com cartão de crédito
 - Webhook para confirmação automática de pagamentos
 - Aprovação automática após pagamento confirmado
 - Páginas de sucesso e cancelamento personalizadas
 - Ambiente de teste completo com cartões de teste
+
+### Sistema de Cupons de Desconto
+- Criação de cupons com código personalizado
+- Tipos de desconto: percentual ou valor fixo
+- Data de validade configurável
+- Limite de usos por cupom
+- Validação em tempo real no checkout
+- Histórico de uso de cupons
 
 ### Catálogo Público de Cursos
 - Listagem completa de cursos disponíveis
@@ -64,9 +76,22 @@ SkillPro é uma plataforma de ensino online completa que permite:
 - Criação de cursos gratuitos ou pagos
 - Configuração de preços em reais (BRL)
 - Upload de vídeos para aulas via MinIO (S3-compatible)
+- **Suporte a vídeos externos** (YouTube, Vimeo, Google Drive)
 - Organização hierárquica: Curso → Módulos → Aulas
 - Controle de progresso do aluno
 - Thumbnails e imagens de capa
+
+### Sistema de Materiais de Apoio
+- Upload de materiais por aula (PDF, DOC, XLS, etc.)
+- Download de materiais pelos alunos
+- Organização por tipo de arquivo
+- Gerenciamento completo no painel admin
+
+### Player de Vídeo Avançado
+- Player nativo para vídeos hospedados
+- **Player externo** para YouTube, Vimeo e Google Drive
+- Detecção automática do tipo de vídeo
+- Interface responsiva e moderna
 
 ### Sistema de Avaliações
 - Questionários por módulo
@@ -82,6 +107,7 @@ SkillPro é uma plataforma de ensino online completa que permite:
 - Assinatura digital para validação
 - Página pública de verificação
 - Download/visualização em PDF
+- **Geração de certificados para treinamentos empresariais**
 
 ### Sistema de Inscrições Híbrido
 - **Cursos Gratuitos**: Solicitação de inscrição → Aprovação manual do admin
@@ -89,6 +115,46 @@ SkillPro é uma plataforma de ensino online completa que permite:
 - Status de matrícula (PENDING, APPROVED, REJECTED)
 - Rastreamento de pagamentos e transações
 - Dashboard do aluno com separação: "Meus Cursos" vs "Todos os Cursos"
+
+## Módulo Empresarial
+
+O SkillPro oferece um módulo completo para treinamentos corporativos:
+
+### Gestão de Empresas
+- Cadastro de empresas parceiras
+- Informações completas (CNPJ, contato, endereço)
+- Dashboard com métricas por empresa
+- Controle de contratos e planos
+
+### Gestão de Funcionários
+- Cadastro individual de funcionários
+- **Importação em massa via planilha Excel/CSV**
+- Vinculação automática à empresa
+- Geração de credenciais de acesso
+- Template de importação para download
+
+### Treinamentos Corporativos
+- Criação de treinamentos específicos por empresa
+- Estrutura modular: Treinamento → Módulos → Aulas
+- Atribuição de treinamentos a funcionários
+- Controle de prazos e obrigatoriedade
+- Acompanhamento de progresso em tempo real
+
+### Certificados Empresariais
+- Templates personalizados por empresa
+- Certificados com logo da empresa
+- Validação pública de certificados
+- Relatórios de conclusão
+
+### Painel Administrativo Empresarial
+- `/admin/empresarial/empresas` - Gestão de empresas
+- `/admin/empresarial/funcionarios` - Gestão de funcionários
+- `/admin/empresarial/treinamentos` - Gestão de treinamentos
+
+### Portal do Funcionário
+- `/treinamentos` - Lista de treinamentos atribuídos
+- `/treinamentos/[id]` - Conteúdo do treinamento
+- `/treinamentos/certificados` - Certificados obtidos
 
 ## Tecnologias Utilizadas
 
@@ -266,12 +332,31 @@ Senha: student123
    - Se pago, defina o preço em R$
    - Selecione template de certificado
    - Crie módulos e aulas
-   - Faça upload de vídeos
+   - Faça upload de vídeos ou use URLs externas (YouTube, Vimeo)
+   - Adicione materiais de apoio às aulas
    - Configure questionários e prova final
-4. **Gerenciar Inscrições**:
+4. **Gerenciar Cupons**:
+   - Acesse `/admin/coupons`
+   - Crie cupons com código, tipo de desconto e validade
+5. **Gerenciar Inscrições**:
    - Acesse `/admin/enrollments`
    - Aprove ou rejeite solicitações de **cursos gratuitos**
    - Cursos pagos são aprovados automaticamente após pagamento
+
+### Gestão Empresarial (Admin)
+
+1. **Cadastrar Empresas**:
+   - Acesse `/admin/empresarial/empresas`
+   - Adicione informações da empresa parceira
+2. **Cadastrar Funcionários**:
+   - Acesse `/admin/empresarial/funcionarios`
+   - Cadastre individualmente ou importe via planilha
+   - Baixe o template de importação
+3. **Criar Treinamentos**:
+   - Acesse `/admin/empresarial/treinamentos`
+   - Crie treinamentos específicos para empresas
+   - Adicione módulos e aulas
+   - Atribua a funcionários
 
 ### Como Aluno
 
@@ -281,13 +366,21 @@ Senha: student123
 2. **Explorar Cursos** na landing page ou em `/dashboard/catalog`
 3. **Inscrever-se em Curso**:
    - **Curso Gratuito**: Clique em "Inscrever-se Grátis" → Aguardar aprovação do admin
-   - **Curso Pago**: Clique em "Comprar Agora" → Pagar via Stripe → Aprovação automática
+   - **Curso Pago**: Clique em "Comprar Agora" → Aplicar cupom (opcional) → Pagar via Stripe → Aprovação automática
 4. **Estudar** em `/dashboard/courses`:
    - Acessar "Meus Cursos" (cursos aprovados)
    - Assistir aulas em sequência
+   - Baixar materiais de apoio
    - Completar questionários
    - Fazer prova final (nota mínima: 70%)
 5. **Baixar Certificado** em `/dashboard/certificates`
+
+### Como Funcionário (Empresarial)
+
+1. **Acesse** `/treinamentos` com suas credenciais
+2. **Visualize** os treinamentos atribuídos pela empresa
+3. **Complete** as aulas e avaliações
+4. **Baixe** seus certificados em `/treinamentos/certificados`
 
 ### Testando Pagamentos (Ambiente de Desenvolvimento)
 
@@ -332,45 +425,61 @@ SkillPro/
 ├── src/
 │   ├── app/                   # Next.js App Router
 │   │   ├── admin/            # Páginas administrativas
+│   │   │   ├── courses/      # Gestão de cursos
+│   │   │   ├── coupons/      # Gestão de cupons
+│   │   │   └── empresarial/  # Módulo empresarial
+│   │   │       ├── empresas/
+│   │   │       ├── funcionarios/
+│   │   │       └── treinamentos/
 │   │   ├── api/              # API Routes
-│   │   │   ├── auth/        # Autenticação (registro)
-│   │   │   ├── create-checkout-session/ # Checkout Stripe
-│   │   │   └── webhooks/    # Webhooks (Stripe)
+│   │   │   ├── admin/        # APIs administrativas
+│   │   │   │   ├── coupons/  # CRUD de cupons
+│   │   │   │   ├── empresas/ # CRUD de empresas
+│   │   │   │   ├── funcionarios/ # CRUD de funcionários
+│   │   │   │   └── treinamentos/ # CRUD de treinamentos
+│   │   │   ├── auth/         # Autenticação
+│   │   │   ├── coupons/      # Validação de cupons
+│   │   │   ├── courses/      # APIs de cursos
+│   │   │   │   └── [courseId]/materials/ # Materiais do curso
+│   │   │   ├── lessons/      # APIs de aulas
+│   │   │   │   └── [lessonId]/materials/ # Materiais da aula
+│   │   │   ├── treinamentos/ # APIs de treinamentos
+│   │   │   ├── upload/       # Upload de arquivos
+│   │   │   ├── video/        # Streaming de vídeo
+│   │   │   └── webhooks/     # Webhooks (Stripe)
 │   │   ├── checkout/         # Páginas de checkout
 │   │   ├── cursos/           # Detalhes públicos de cursos
 │   │   ├── dashboard/        # Dashboard do aluno
-│   │   │   ├── catalog/     # Catálogo (todos os cursos)
-│   │   │   └── courses/     # Meus cursos (aprovados)
+│   │   ├── empresarial/      # Landing empresarial
 │   │   ├── login/            # Autenticação
-│   │   ├── page.tsx          # Landing page modernizada
+│   │   ├── treinamentos/     # Portal do funcionário
+│   │   ├── page.tsx          # Landing page
 │   │   └── verificar/        # Verificação de certificados
 │   ├── components/           # Componentes React
-│   │   ├── landing/         # Componentes da landing page
-│   │   ├── ui/              # Componentes UI (Radix)
-│   │   ├── course-card.tsx  # Card de curso reutilizável
-│   │   ├── enroll-button.tsx # Botão de inscrição inteligente
-│   │   └── register-form.tsx # Formulário de registro
-│   └── lib/                 # Bibliotecas e utilitários
-│       ├── auth-helpers.ts  # Helpers de autenticação
-│       ├── docx-to-pdf.ts   # Conversão DOCX→PDF
-│       ├── minio.ts         # Cliente MinIO
-│       ├── pdf-converter.ts # Geração de PDF
-│       └── prisma.ts        # Cliente Prisma
-├── scripts/                 # Scripts utilitários
-│   ├── init-minio.js       # Inicializar MinIO
-│   ├── seed.ts             # Popular banco de dados
-│   └── generate-certificate-direct.ts
-├── docs/                    # Documentação
-│   ├── FUNCIONALIDADES.md
-│   ├── REGRAS_DE_NEGOCIOS.md
-│   └── *.md
-├── test-stripe.js          # Teste de integração Stripe
-├── test-checkout-flow.js   # Teste de fluxo de checkout
-├── create-test-student.js  # Criar aluno de teste
-├── verify-purchase-flow.js # Verificar fluxo de compra
-├── TESTE-FLUXO-COMPRA.md   # Guia de testes de pagamento
-├── docker-compose.yml       # Docker Compose config
-├── .env.example            # Exemplo de variáveis
+│   │   ├── landing/          # Componentes da landing page
+│   │   │   └── enterprise-section.tsx # Seção empresarial
+│   │   ├── ui/               # Componentes UI (Radix)
+│   │   │   ├── alert.tsx
+│   │   │   ├── alert-dialog.tsx
+│   │   │   ├── dropdown-menu.tsx
+│   │   │   ├── table.tsx
+│   │   │   └── textarea.tsx
+│   │   ├── course-card.tsx   # Card de curso
+│   │   ├── employee-import-dialog.tsx # Importação de funcionários
+│   │   ├── external-video-player.tsx  # Player externo
+│   │   ├── generate-certificate-button.tsx # Botão de certificado
+│   │   ├── material-upload.tsx # Upload de materiais
+│   │   └── video-player.tsx  # Player de vídeo
+│   └── lib/                  # Bibliotecas e utilitários
+│       ├── certificate-generator.ts # Gerador de certificados
+│       ├── video-utils.ts    # Utilitários de vídeo
+│       ├── docx-to-pdf.ts    # Conversão DOCX→PDF
+│       ├── minio.ts          # Cliente MinIO
+│       └── prisma.ts         # Cliente Prisma
+├── scripts/                  # Scripts utilitários
+├── docs/                     # Documentação
+├── docker-compose.yml        # Docker Compose config
+├── .env.example              # Exemplo de variáveis
 ├── package.json
 └── README.md
 ```
@@ -381,7 +490,7 @@ SkillPro/
 - [Regras de Negócio](./docs/REGRAS_DE_NEGOCIOS.md)
 - [Sistema de Certificados](./docs/SISTEMA_CERTIFICADOS_FINAL.md)
 - [Guia de Testes de Certificados](./docs/TESTE_CERTIFICADOS.md)
-- **[Guia de Testes de Pagamento](./TESTE-FLUXO-COMPRA.md)** ⭐ Novo!
+- [Guia de Testes de Pagamento](./TESTE-FLUXO-COMPRA.md)
 
 ## Scripts de Teste
 
