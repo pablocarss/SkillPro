@@ -1,10 +1,10 @@
 import { Navbar } from "@/components/navbar";
 import { HeroSection } from "@/components/landing/hero-section";
 import { StatsSection } from "@/components/landing/stats-section";
-import { FeaturedCourses } from "@/components/landing/featured-courses";
+import { CoursesCatalogSection } from "@/components/landing/courses-catalog-section";
 import { TestimonialsSection } from "@/components/landing/testimonials-section";
 import { EnterpriseSection } from "@/components/landing/enterprise-section";
-import { CourseCard } from "@/components/course-card";
+import { CertificateVerifySection } from "@/components/landing/certificate-verify-section";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookOpen, Award, Users, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import { prisma } from "@/lib/prisma";
 export const revalidate = 3600;
 
 export default async function Home() {
-  // Buscar estatísticas
+  // Buscar estatisticas
   const [approvedEnrollments, publishedCourses, certificates, students] = await Promise.all([
     prisma.enrollment.count({ where: { status: 'APPROVED' } }),
     prisma.course.count({ where: { isPublished: true } }),
@@ -23,8 +23,8 @@ export default async function Home() {
     prisma.user.count({ where: { role: 'STUDENT' } })
   ]);
 
-  // Buscar 6 cursos em destaque (mais populares)
-  const featuredCourses = await prisma.course.findMany({
+  // Buscar cursos para o catalogo (mais cursos para filtrar)
+  const allCourses = await prisma.course.findMany({
     where: { isPublished: true },
     include: {
       _count: { select: { enrollments: true } },
@@ -35,7 +35,7 @@ export default async function Home() {
       }
     },
     orderBy: { enrollments: { _count: 'desc' } },
-    take: 6
+    take: 12
   });
 
   // Buscar depoimentos aprovados
@@ -55,6 +55,12 @@ export default async function Home() {
     certificates
   };
 
+  const catalogStats = {
+    totalCourses: publishedCourses,
+    totalStudents: students,
+    totalCertificates: certificates
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -66,9 +72,9 @@ export default async function Home() {
         {/* Stats Section */}
         <StatsSection stats={stats} />
 
-        {/* Featured Courses */}
-        {featuredCourses.length > 0 && (
-          <FeaturedCourses courses={featuredCourses} />
+        {/* Courses Catalog */}
+        {allCourses.length > 0 && (
+          <CoursesCatalogSection courses={allCourses} stats={catalogStats} />
         )}
 
         {/* Why Choose SkillPro */}
@@ -87,7 +93,7 @@ export default async function Home() {
                 </CardHeader>
                 <CardContent>
                   <CardDescription>
-                    Aprenda com conteúdo estruturado e organizado em uma timeline de ensino clara
+                    Aprenda com conteúdo estruturado e organizado em uma linha de ensino clara
                   </CardDescription>
                 </CardContent>
               </Card>
@@ -139,6 +145,9 @@ export default async function Home() {
 
         {/* Enterprise Section */}
         <EnterpriseSection />
+
+        {/* Certificate Verification */}
+        <CertificateVerifySection />
 
         {/* Testimonials */}
         {testimonials.length > 0 && (

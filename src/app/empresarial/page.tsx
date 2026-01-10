@@ -10,6 +10,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
   Building2,
   Users,
   Award,
@@ -28,6 +34,18 @@ import {
   MapPin,
   Send,
   Loader2,
+  Briefcase,
+  Zap,
+  FileCheck,
+  MessageSquare,
+  Lightbulb,
+  Settings,
+  Lock,
+  Rocket,
+  BadgeCheck,
+  FileText,
+  UsersRound,
+  Scale,
 } from "lucide-react";
 
 export default function EmpresarialPage() {
@@ -39,6 +57,7 @@ export default function EmpresarialPage() {
     email: "",
     phone: "",
     employeeCount: "",
+    interest: "",
     message: "",
   });
   const { toast } = useToast();
@@ -47,7 +66,6 @@ export default function EmpresarialPage() {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simular envio
     await new Promise((resolve) => setTimeout(resolve, 1500));
 
     toast({
@@ -62,10 +80,70 @@ export default function EmpresarialPage() {
       email: "",
       phone: "",
       employeeCount: "",
+      interest: "",
       message: "",
     });
     setIsSubmitting(false);
   };
+
+  const pillars = [
+    {
+      icon: Building2,
+      title: "Treinamentos para Empresas",
+      description: "Capacitação corporativa personalizada para atender às necessidades específicas do seu negócio",
+      features: [
+        "Cursos sob demanda",
+        "Conteúdo personalizado",
+        "Gestão centralizada",
+        "Relatórios detalhados",
+      ],
+      color: "from-blue-500 to-cyan-500",
+      bgColor: "bg-blue-500/10",
+      textColor: "text-blue-600 dark:text-blue-400",
+    },
+    {
+      icon: UsersRound,
+      title: "Treinamentos para Equipes",
+      description: "Desenvolva times de alta performance com trilhas de aprendizado colaborativas e direcionadas",
+      features: [
+        "Trilhas por departamento",
+        "Metas coletivas",
+        "Acompanhamento em tempo real",
+        "Certificação em grupo",
+      ],
+      color: "from-purple-500 to-pink-500",
+      bgColor: "bg-purple-500/10",
+      textColor: "text-purple-600 dark:text-purple-400",
+    },
+    {
+      icon: Award,
+      title: "Certificações Obrigatórias",
+      description: "Certificações exigidas por órgãos reguladores e normas do setor para sua empresa",
+      features: [
+        "NRs e normas técnicas",
+        "Certificados com validade",
+        "Renovação automática",
+        "Conformidade garantida",
+      ],
+      color: "from-amber-500 to-orange-500",
+      bgColor: "bg-amber-500/10",
+      textColor: "text-amber-600 dark:text-amber-400",
+    },
+    {
+      icon: BadgeCheck,
+      title: "Acreditação para Licitações",
+      description: "Qualificação técnica e documentação necessária para participar de processos licitatórios",
+      features: [
+        "Atestados de capacidade",
+        "Documentação completa",
+        "Conformidade com editais",
+        "Suporte especializado",
+      ],
+      color: "from-emerald-500 to-green-500",
+      bgColor: "bg-emerald-500/10",
+      textColor: "text-emerald-600 dark:text-emerald-400",
+    },
+  ];
 
   const benefits = [
     {
@@ -100,51 +178,82 @@ export default function EmpresarialPage() {
     },
   ];
 
-  const plans = [
+  const certificationTypes = [
     {
-      name: "Starter",
-      employees: "Até 25 funcionários",
-      price: "R$ 1.999",
-      period: "/mês",
-      features: [
-        "Acesso a todos os cursos",
-        "Painel administrativo",
-        "Relatórios básicos",
-        "Suporte por email",
-        "Certificados padrão",
-      ],
-      highlighted: false,
+      icon: Lock,
+      title: "Normas Regulamentadoras (NRs)",
+      description: "Treinamentos obrigatórios de segurança e saúde do trabalho",
+      items: ["NR-5 CIPA", "NR-6 EPIs", "NR-10 Eletricidade", "NR-35 Trabalho em Altura"],
     },
     {
-      name: "Business",
-      employees: "Até 100 funcionários",
-      price: "R$ 4.999",
-      period: "/mês",
-      features: [
-        "Tudo do Starter",
-        "Relatórios avançados",
-        "Certificados personalizados",
-        "Suporte prioritário",
-        "Trilhas customizadas",
-        "Gerente de conta dedicado",
-      ],
-      highlighted: true,
+      icon: Shield,
+      title: "Compliance e LGPD",
+      description: "Conformidade com legislação e proteção de dados",
+      items: ["Lei Geral de Proteção de Dados", "Prevenção à Lavagem de Dinheiro", "Código de Ética", "Canal de Denúncias"],
     },
     {
-      name: "Enterprise",
-      employees: "Funcionários ilimitados",
-      price: "Sob consulta",
-      period: "",
-      features: [
-        "Tudo do Business",
-        "Cursos exclusivos",
-        "API de integração",
-        "SLA garantido",
-        "Onboarding dedicado",
-        "Treinamento presencial",
-      ],
-      highlighted: false,
+      icon: Scale,
+      title: "Normas ISO",
+      description: "Certificações de qualidade e gestão",
+      items: ["ISO 9001 Qualidade", "ISO 14001 Ambiental", "ISO 45001 Segurança", "ISO 27001 Segurança da Informação"],
     },
+  ];
+
+  const processSteps = [
+    {
+      icon: MessageSquare,
+      title: "1. Contato Inicial",
+      description: "Nossa equipe entra em contato para entender suas necessidades de treinamento",
+    },
+    {
+      icon: Lightbulb,
+      title: "2. Diagnóstico",
+      description: "Analisamos os gaps de competências e desenhamos um programa personalizado",
+    },
+    {
+      icon: Settings,
+      title: "3. Configuração",
+      description: "Configuramos a plataforma, importamos funcionários e criamos as trilhas",
+    },
+    {
+      icon: Rocket,
+      title: "4. Lançamento",
+      description: "Lançamos o programa com comunicação interna e suporte para os usuários",
+    },
+  ];
+
+  const faqs = [
+    {
+      question: "Quanto tempo leva para implementar a plataforma?",
+      answer: "A implementação básica leva de 3 a 5 dias úteis. Para projetos com conteúdo customizado, o prazo pode variar de 2 a 4 semanas dependendo da complexidade.",
+    },
+    {
+      question: "Posso criar cursos exclusivos para minha empresa?",
+      answer: "Sim! Podemos criar cursos exclusivos alinhados com as necessidades específicas da sua empresa, incluindo conteúdo sobre processos internos, cultura organizacional e procedimentos técnicos.",
+    },
+    {
+      question: "Como funciona a acreditação para licitações?",
+      answer: "Oferecemos suporte completo para documentação e qualificação técnica exigida em processos licitatórios, incluindo atestados de capacidade técnica e certificações obrigatórias.",
+    },
+    {
+      question: "Os certificados são válidos para órgãos reguladores?",
+      answer: "Sim! Todos os certificados são validados digitalmente com hash único e atendem aos requisitos dos principais órgãos reguladores. Podem ser verificados a qualquer momento no nosso sistema.",
+    },
+    {
+      question: "Como funciona o modelo de contratação?",
+      answer: "Trabalhamos com pacotes personalizados sob consulta, adequados ao tamanho da sua empresa e às suas necessidades específicas. Entre em contato para receber uma proposta.",
+    },
+    {
+      question: "Posso acompanhar o progresso dos funcionários?",
+      answer: "Sim! O painel administrativo oferece visão completa do progresso individual e coletivo, com métricas de engajamento, conclusão de cursos e notas nas avaliações.",
+    },
+  ];
+
+  const stats = [
+    { value: "500+", label: "Empresas Parceiras" },
+    { value: "50.000+", label: "Profissionais Certificados" },
+    { value: "98%", label: "Taxa de Aprovação" },
+    { value: "2M+", label: "Horas de Treinamento" },
   ];
 
   return (
@@ -157,28 +266,142 @@ export default function EmpresarialPage() {
           <div className="max-w-4xl mx-auto text-center">
             <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/20">
               <Building2 className="h-3 w-3 mr-1" />
-              Treinamentos Corporativos
+              Soluções Corporativas
             </Badge>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-4 sm:mb-6">
-              Capacite sua equipe com a{" "}
+              Treinamentos, Certificação e{" "}
               <span className="bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
-                SkillPro Empresarial
+                Acreditação
               </span>
             </h1>
             <p className="text-base sm:text-lg lg:text-xl text-muted-foreground mb-6 sm:mb-8 px-4">
-              Soluções completas de treinamento para empresas de todos os tamanhos.
-              Gerencie, acompanhe e desenvolva sua equipe em um único lugar.
+              Soluções completas para capacitar sua equipe, obter certificações obrigatórias
+              e garantir acreditação para participar de licitações públicas e privadas.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-              <Button size="lg" className="h-12 text-base group">
-                Solicitar Demonstração
-                <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+              <Button size="lg" className="h-12 text-base group" asChild>
+                <a href="#contato">
+                  Solicitar Proposta
+                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </a>
               </Button>
-              <Button size="lg" variant="outline" className="h-12 text-base">
-                <Headphones className="mr-2 h-4 w-4" />
-                Falar com Consultor
+              <Button size="lg" variant="outline" className="h-12 text-base" asChild>
+                <a href="#solucoes">
+                  <BookOpen className="mr-2 h-4 w-4" />
+                  Ver Soluções
+                </a>
               </Button>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Stats */}
+      <section className="py-10 sm:py-12 border-b">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8 max-w-4xl mx-auto">
+            {stats.map((stat, index) => (
+              <div key={index} className="text-center">
+                <p className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
+                  {stat.value}
+                </p>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">{stat.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 4 Pillars */}
+      <section id="solucoes" className="py-12 sm:py-16 lg:py-20 scroll-mt-20">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-8 sm:mb-12">
+            <Badge className="mb-4">
+              <GraduationCap className="h-3 w-3 mr-1" />
+              Nossas Soluções
+            </Badge>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground mb-3 sm:mb-4">
+              Soluções Completas para sua Empresa
+            </h2>
+            <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
+              Quatro pilares para o desenvolvimento completo da sua organização
+            </p>
+          </div>
+
+          <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+            {pillars.map((pillar, index) => {
+              const Icon = pillar.icon;
+              return (
+                <Card
+                  key={index}
+                  className="border-2 transition-all hover:border-primary/50 hover:shadow-xl group overflow-hidden"
+                >
+                  <div className={`h-1.5 bg-gradient-to-r ${pillar.color}`} />
+                  <CardContent className="p-5 sm:p-6">
+                    <div className={`inline-flex h-12 w-12 items-center justify-center rounded-xl ${pillar.bgColor} mb-4 group-hover:scale-110 transition-transform`}>
+                      <Icon className={`h-6 w-6 ${pillar.textColor}`} />
+                    </div>
+                    <h3 className="font-bold text-lg mb-2">{pillar.title}</h3>
+                    <p className="text-sm text-muted-foreground mb-4">{pillar.description}</p>
+                    <ul className="space-y-2">
+                      {pillar.features.map((feature, fIndex) => (
+                        <li key={fIndex} className="flex items-center gap-2 text-sm">
+                          <CheckCircle2 className={`h-4 w-4 flex-shrink-0 ${pillar.textColor}`} />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Certifications */}
+      <section className="py-12 sm:py-16 lg:py-20 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-8 sm:mb-12">
+            <Badge className="mb-4 bg-amber-500/10 text-amber-600">
+              <Award className="h-3 w-3 mr-1" />
+              Certificações
+            </Badge>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground mb-3 sm:mb-4">
+              Certificações que sua Empresa Precisa
+            </h2>
+            <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
+              Treinamentos obrigatórios para conformidade com normas e regulamentações
+            </p>
+          </div>
+
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {certificationTypes.map((cert, index) => {
+              const Icon = cert.icon;
+              return (
+                <Card key={index} className="border-2 hover:border-primary/50 hover:shadow-lg transition-all">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500/20 to-orange-500/20">
+                        <Icon className="h-6 w-6 text-amber-600" />
+                      </div>
+                      <CardTitle className="text-lg">{cert.title}</CardTitle>
+                    </div>
+                    <CardDescription>{cert.description}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-2">
+                      {cert.items.map((item, i) => (
+                        <li key={i} className="flex items-center gap-2 text-sm">
+                          <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -187,6 +410,10 @@ export default function EmpresarialPage() {
       <section className="py-12 sm:py-16 lg:py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-8 sm:mb-12">
+            <Badge className="mb-4">
+              <Target className="h-3 w-3 mr-1" />
+              Benefícios
+            </Badge>
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground mb-3 sm:mb-4">
               Por que escolher a SkillPro?
             </h2>
@@ -199,10 +426,10 @@ export default function EmpresarialPage() {
             {benefits.map((benefit, index) => {
               const Icon = benefit.icon;
               return (
-                <Card key={index} className="border-2 transition-all hover:border-primary/50 hover:shadow-lg">
+                <Card key={index} className="border-2 transition-all hover:border-primary/50 hover:shadow-lg group">
                   <CardContent className="p-5 sm:p-6">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 mb-4">
-                      <Icon className="h-6 w-6 text-primary" />
+                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 mb-4 group-hover:bg-primary transition-colors">
+                      <Icon className="h-6 w-6 text-primary group-hover:text-white transition-colors" />
                     </div>
                     <h3 className="font-semibold text-base sm:text-lg mb-2">{benefit.title}</h3>
                     <p className="text-sm text-muted-foreground">{benefit.description}</p>
@@ -214,59 +441,151 @@ export default function EmpresarialPage() {
         </div>
       </section>
 
-      {/* Plans */}
+      {/* Implementation Process */}
       <section className="py-12 sm:py-16 lg:py-20 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-8 sm:mb-12">
+            <Badge className="mb-4">
+              <Settings className="h-3 w-3 mr-1" />
+              Processo
+            </Badge>
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground mb-3 sm:mb-4">
-              Planos Empresariais
+              Como Funciona
             </h2>
             <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
-              Escolha o plano ideal para o tamanho da sua empresa
+              Implementação simples e rápida para começar a capacitar sua equipe
             </p>
           </div>
 
-          <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-3 max-w-5xl mx-auto">
-            {plans.map((plan, index) => (
-              <Card
-                key={index}
-                className={`border-2 transition-all ${
-                  plan.highlighted
-                    ? "border-primary shadow-xl scale-105"
-                    : "hover:border-primary/50 hover:shadow-lg"
-                }`}
-              >
-                {plan.highlighted && (
-                  <div className="bg-primary text-primary-foreground text-center py-2 text-sm font-medium">
-                    Mais Popular
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 max-w-5xl mx-auto">
+            {processSteps.map((step, index) => {
+              const Icon = step.icon;
+              return (
+                <div key={index} className="text-center">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary to-purple-600 mx-auto mb-4 text-white">
+                    <Icon className="h-7 w-7" />
                   </div>
-                )}
-                <CardHeader className="p-5 sm:p-6">
-                  <CardTitle className="text-lg sm:text-xl">{plan.name}</CardTitle>
-                  <CardDescription>{plan.employees}</CardDescription>
-                  <div className="mt-4">
-                    <span className="text-3xl sm:text-4xl font-bold text-foreground">{plan.price}</span>
-                    <span className="text-muted-foreground">{plan.period}</span>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-5 sm:p-6 pt-0">
-                  <ul className="space-y-3 mb-6">
-                    {plan.features.map((feature, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm">
-                        <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span>{feature}</span>
+                  <h3 className="font-semibold text-lg mb-2">{step.title}</h3>
+                  <p className="text-sm text-muted-foreground">{step.description}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing - Sob Consulta */}
+      <section className="py-12 sm:py-16 lg:py-20">
+        <div className="container mx-auto px-4">
+          <div className="max-w-3xl mx-auto">
+            <Card className="border-2 border-primary/20 shadow-xl overflow-hidden">
+              <div className="bg-gradient-to-r from-primary via-purple-600 to-pink-600 p-6 sm:p-8 text-white text-center">
+                <div className="flex items-center justify-center gap-2 mb-3">
+                  <Briefcase className="h-6 w-6" />
+                  <span className="text-lg font-medium">SkillPro Empresarial</span>
+                </div>
+                <h3 className="text-2xl sm:text-3xl font-bold mb-2">Pacotes Personalizados</h3>
+                <p className="text-white/80">Soluções sob medida para sua empresa</p>
+              </div>
+              <CardContent className="p-6 sm:p-8">
+                <div className="grid gap-6 sm:grid-cols-2 mb-8">
+                  <div>
+                    <h4 className="font-semibold mb-4">Incluso em todos os pacotes:</h4>
+                    <ul className="space-y-3">
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">Treinamentos ilimitados para equipes</span>
                       </li>
-                    ))}
-                  </ul>
-                  <Button
-                    className={`w-full ${plan.highlighted ? "" : "variant-outline"}`}
-                    variant={plan.highlighted ? "default" : "outline"}
-                  >
-                    {plan.price === "Sob consulta" ? "Falar com Vendas" : "Começar Agora"}
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">Certificações obrigatórias (NRs, ISO, etc.)</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">Acreditação para processos licitatórios</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">Painel de gestão e relatórios completos</span>
+                      </li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold mb-4">Diferenciais:</h4>
+                    <ul className="space-y-3">
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">Suporte dedicado e consultoria especializada</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">Conteúdo personalizado para sua empresa</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">Integração com sistemas corporativos</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-sm">Gerente de conta dedicado</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-lg bg-muted/50 border border-dashed mb-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FileText className="h-5 w-5 text-primary" />
+                    <span className="font-semibold">Valores Sob Consulta</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Os valores são personalizados de acordo com o número de colaboradores,
+                    tipos de treinamentos necessários e nível de personalização. Entre em contato
+                    para receber uma proposta adequada às necessidades da sua empresa.
+                  </p>
+                </div>
+
+                <Button className="w-full h-12 text-base group" asChild>
+                  <a href="#contato">
+                    Solicitar Proposta Personalizada
+                    <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </a>
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="py-12 sm:py-16 lg:py-20 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-8 sm:mb-12">
+            <Badge className="mb-4">
+              <MessageSquare className="h-3 w-3 mr-1" />
+              FAQ
+            </Badge>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground mb-3 sm:mb-4">
+              Perguntas Frequentes
+            </h2>
+            <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
+              Tire suas dúvidas sobre a plataforma empresarial
+            </p>
+          </div>
+
+          <div className="max-w-3xl mx-auto">
+            <Accordion type="single" collapsible className="w-full">
+              {faqs.map((faq, index) => (
+                <AccordionItem key={index} value={`item-${index}`}>
+                  <AccordionTrigger className="text-left text-base">
+                    {faq.question}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-muted-foreground">
+                    {faq.answer}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
           </div>
         </div>
       </section>
@@ -276,6 +595,10 @@ export default function EmpresarialPage() {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-8 sm:mb-12">
+              <Badge className="mb-4 bg-primary/10 text-primary">
+                <Mail className="h-3 w-3 mr-1" />
+                Contato
+              </Badge>
               <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground mb-3 sm:mb-4">
                 Solicite uma Proposta
               </h2>
@@ -355,6 +678,16 @@ export default function EmpresarialPage() {
                             required
                           />
                         </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="interest">Interesse Principal</Label>
+                        <Input
+                          id="interest"
+                          value={formData.interest}
+                          onChange={(e) => setFormData({ ...formData, interest: e.target.value })}
+                          placeholder="Ex: Certificações NR, Treinamentos de equipe, Acreditação para licitações..."
+                        />
                       </div>
 
                       <div className="space-y-2">
