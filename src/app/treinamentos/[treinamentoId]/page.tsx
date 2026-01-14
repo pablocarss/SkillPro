@@ -18,6 +18,7 @@ import {
   FileText,
   Play,
   Check,
+  Download,
 } from "lucide-react";
 import {
   Accordion,
@@ -26,6 +27,20 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import Link from "next/link";
+import { TrainingVideoPlayer } from "@/components/training-video-player";
+import { ExternalVideoPlayer } from "@/components/external-video-player";
+import { TrainingLessonQuiz } from "@/components/training-lesson-quiz";
+import { isExternalVideoUrl } from "@/lib/video-utils";
+
+interface Material {
+  id: string;
+  title: string;
+  description: string | null;
+  fileUrl: string;
+  fileType: string;
+  fileSize: number | null;
+  isExternal: boolean;
+}
 
 interface Lesson {
   id: string;
@@ -55,13 +70,14 @@ interface Training {
   company: {
     id: string;
     name: string;
-  };
+  } | null;
   modules: Module[];
   progress: {
     total: number;
     completed: number;
     percentage: number;
   };
+  hasExam: boolean;
   examPassed: boolean;
   hasCertificate: boolean;
   certificateId: string | null;
@@ -72,11 +88,50 @@ export default function TrainingViewPage({ params }: { params: Promise<{ treinam
   const { toast } = useToast();
   const [training, setTraining] = useState<Training | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+  const [lessonMaterials, setLessonMaterials] = useState<Material[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [userName, setUserName] = useState<string>("");
+  const [isMarkingComplete, setIsMarkingComplete] = useState(false);
 
   useEffect(() => {
     fetchTraining();
+    // Buscar nome do usuário para o player
+    const fetchUser = async () => {
+      try {
+        const response = await fetch("/api/auth/me");
+        if (response.ok) {
+          const data = await response.json();
+          if (data.name) {
+            setUserName(data.name);
+          }
+        }
+      } catch (error) {
+        console.error("Erro ao buscar usuário:", error);
+      }
+    };
+    fetchUser();
   }, [resolvedParams.treinamentoId]);
+
+  // Buscar materiais quando uma aula é selecionada
+  useEffect(() => {
+    if (selectedLesson) {
+      fetchMaterials(selectedLesson.id);
+    }
+  }, [selectedLesson?.id]);
+
+  const fetchMaterials = async (lessonId: string) => {
+    try {
+      const response = await fetch(`/api/training-lessons/${lessonId}/materials`);
+      if (response.ok) {
+        const data = await response.json();
+        setLessonMaterials(data);
+      } else {
+        setLessonMaterials([]);
+      }
+    } catch (error) {
+      setLessonMaterials([]);
+    }
+  };
 
   const fetchTraining = async () => {
     try {
@@ -105,9 +160,10 @@ export default function TrainingViewPage({ params }: { params: Promise<{ treinam
     }
   };
 
-  const handleMarkComplete = async () => {
-    if (!selectedLesson || !training) return;
+  const handleMarkComplete = async (showToast = true): Promise<boolean> => {
+    if (!selectedLesson || !training || isMarkingComplete) return false;
 
+    setIsMarkingComplete(true);
     try {
       const response = await fetch(
         `/api/treinamentos/${training.id}/lessons/${selectedLesson.id}/progress`,
@@ -115,14 +171,21 @@ export default function TrainingViewPage({ params }: { params: Promise<{ treinam
       );
 
       if (response.ok) {
-        toast({ title: "Aula marcada como concluída!" });
-        fetchTraining();
+        if (showToast) {
+          toast({ title: "Aula marcada como concluída!" });
+        }
+        await fetchTraining();
+        return true;
       }
+      return false;
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Erro ao marcar aula como concluída",
       });
+      return false;
+    } finally {
+      setIsMarkingComplete(false);
     }
   };
 
@@ -132,6 +195,38 @@ export default function TrainingViewPage({ params }: { params: Promise<{ treinam
     const allLessons = training.modules.flatMap((m) => m.lessons);
     const currentIndex = allLessons.findIndex((l) => l.id === selectedLesson.id);
     return allLessons[currentIndex + 1] || null;
+  };
+
+  // Callback quando o vídeo termina - marca como completo e vai para próxima
+  const handleVideoEnded = async () => {
+    try {
+      if (!selectedLesson || selectedLesson.completed) {
+        // Se já está completa, apenas vai para a próxima
+        const next = getNextLesson();
+        if (next) {
+          setSelectedLesson(next);
+          toast({ title: "Indo para a próxima aula..." });
+        }
+        return;
+      }
+
+      // Marca como concluída
+      const success = await handleMarkComplete(false);
+      if (success) {
+        toast({ title: "Aula concluída! Indo para a próxima..." });
+        // Aguarda um pouco e vai para a próxima aula
+        setTimeout(() => {
+          const next = getNextLesson();
+          if (next) {
+            setSelectedLesson(next);
+          } else {
+            toast({ title: "Parabéns! Você completou todas as aulas!" });
+          }
+        }, 1000);
+      }
+    } catch (error) {
+      console.error("Erro ao processar fim do vídeo:", error);
+    }
   };
 
   const handleNextLesson = () => {
@@ -185,10 +280,12 @@ export default function TrainingViewPage({ params }: { params: Promise<{ treinam
               </Badge>
             </div>
             <h1 className="text-xl sm:text-2xl font-bold text-foreground">{training.title}</h1>
-            <p className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
-              <Building2 className="h-4 w-4" />
-              {training.company.name}
-            </p>
+            {training.company && (
+              <p className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
+                <Building2 className="h-4 w-4" />
+                {training.company.name}
+              </p>
+            )}
           </div>
           {training.hasCertificate && (
             <Link href="/treinamentos/certificados">
@@ -234,13 +331,19 @@ export default function TrainingViewPage({ params }: { params: Promise<{ treinam
               {selectedLesson ? (
                 <div className="space-y-6">
                   {selectedLesson.videoUrl && (
-                    <div className="aspect-video bg-muted rounded-lg overflow-hidden">
-                      <iframe
-                        src={selectedLesson.videoUrl.replace("watch?v=", "embed/")}
-                        className="w-full h-full"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      />
+                    <div className="rounded-lg overflow-hidden">
+                      {isExternalVideoUrl(selectedLesson.videoUrl) ? (
+                        <ExternalVideoPlayer
+                          videoUrl={selectedLesson.videoUrl}
+                          title={selectedLesson.title}
+                        />
+                      ) : (
+                        <TrainingVideoPlayer
+                          lessonId={selectedLesson.id}
+                          userName={userName}
+                          onVideoEnded={handleVideoEnded}
+                        />
+                      )}
                     </div>
                   )}
 
@@ -248,11 +351,63 @@ export default function TrainingViewPage({ params }: { params: Promise<{ treinam
                     <div dangerouslySetInnerHTML={{ __html: selectedLesson.content.replace(/\n/g, "<br />") }} />
                   </div>
 
+                  {/* Materiais de Apoio */}
+                  {lessonMaterials.length > 0 && (
+                    <div className="border-t pt-4">
+                      <h4 className="font-medium mb-3 flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        Material de Apoio
+                      </h4>
+                      <div className="space-y-2">
+                        {lessonMaterials.map((material) => (
+                          <div
+                            key={material.id}
+                            className="flex items-center justify-between p-3 rounded-lg border bg-muted/50"
+                          >
+                            <div className="flex items-center gap-3">
+                              <FileText className="h-5 w-5 text-muted-foreground" />
+                              <div>
+                                <p className="font-medium text-sm">{material.title}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {material.fileType.toUpperCase()}
+                                  {material.fileSize && ` - ${(material.fileSize / 1024 / 1024).toFixed(1)} MB`}
+                                </p>
+                              </div>
+                            </div>
+                            <a
+                              href={material.fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              download={!material.isExternal}
+                            >
+                              <Button variant="outline" size="sm">
+                                <Download className="mr-2 h-4 w-4" />
+                                Baixar
+                              </Button>
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Quiz da Aula */}
+                  <div className="border-t pt-4">
+                    <TrainingLessonQuiz
+                      lessonId={selectedLesson.id}
+                      onQuizPassed={() => fetchTraining()}
+                    />
+                  </div>
+
                   <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t">
                     {!selectedLesson.completed && (
-                      <Button onClick={handleMarkComplete} className="flex-1">
+                      <Button
+                        onClick={() => handleMarkComplete(true)}
+                        className="flex-1"
+                        disabled={isMarkingComplete}
+                      >
                         <Check className="mr-2 h-4 w-4" />
-                        Marcar como Concluída
+                        {isMarkingComplete ? "Marcando..." : "Marcar como Concluída"}
                       </Button>
                     )}
                     {getNextLesson() && (
@@ -328,7 +483,7 @@ export default function TrainingViewPage({ params }: { params: Promise<{ treinam
           </Card>
 
           {/* Prova Final */}
-          {training.progress.percentage === 100 && !training.examPassed && (
+          {training.hasExam && training.progress.percentage === 100 && !training.examPassed && (
             <Card className="mt-4">
               <CardHeader>
                 <CardTitle className="text-base">Prova Final</CardTitle>
@@ -341,6 +496,28 @@ export default function TrainingViewPage({ params }: { params: Promise<{ treinam
                   <Button className="w-full">
                     <Play className="mr-2 h-4 w-4" />
                     Iniciar Prova
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Gerar Certificado (sem prova) */}
+          {!training.hasExam && training.progress.percentage === 100 && !training.hasCertificate && (
+            <Card className="mt-4 border-green-200 dark:border-green-800">
+              <CardHeader>
+                <CardTitle className="text-base text-green-600 dark:text-green-400">
+                  Parabéns! Treinamento Concluído!
+                </CardTitle>
+                <CardDescription>
+                  Você pode gerar seu certificado agora.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Link href="/treinamentos/certificados">
+                  <Button className="w-full">
+                    <Award className="mr-2 h-4 w-4" />
+                    Ver Certificados
                   </Button>
                 </Link>
               </CardContent>

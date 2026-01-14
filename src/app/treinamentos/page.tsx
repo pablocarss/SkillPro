@@ -150,10 +150,12 @@ export default function TreinamentosPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="p-4 sm:p-6 pt-0 space-y-4">
-                  <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
-                    <Building2 className="h-3.5 w-3.5" />
-                    <span>{enrollment.training.company.name}</span>
-                  </div>
+                  {enrollment.training.company && (
+                    <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                      <Building2 className="h-3.5 w-3.5" />
+                      <span>{enrollment.training.company.name}</span>
+                    </div>
+                  )}
 
                   <div className="space-y-2">
                     <div className="flex justify-between text-xs sm:text-sm">
@@ -203,10 +205,12 @@ export default function TreinamentosPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="p-4 sm:p-6 pt-0 space-y-4">
-                  <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
-                    <Building2 className="h-3.5 w-3.5" />
-                    <span>{enrollment.training.company.name}</span>
-                  </div>
+                  {enrollment.training.company && (
+                    <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                      <Building2 className="h-3.5 w-3.5" />
+                      <span>{enrollment.training.company.name}</span>
+                    </div>
+                  )}
 
                   <div className="space-y-2">
                     <Progress value={100} className="h-2 bg-green-100 dark:bg-green-900" />

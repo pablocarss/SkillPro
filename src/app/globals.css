@@ -2,6 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Prevent FOUC - Flash of Unstyled Content */
+/* Critical styles applied before CSS variables load */
+html {
+  background-color: #ffffff;
+  color: #0a0a0a;
+}
+
+html.dark {
+  background-color: #030712;
+  color: #fafafa;
+}
+
+/* Ensure smooth transitions after initial load */
+html, body {
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

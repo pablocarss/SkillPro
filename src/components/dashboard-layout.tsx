@@ -23,6 +23,7 @@ import {
   Briefcase,
   UsersRound,
   Tag,
+  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "./theme-toggle";
@@ -77,6 +78,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const adminLinks = [
     { href: "/admin", label: "Dashboard Admin", icon: LayoutDashboard },
+    { href: "/admin/relatorios", label: "Relatórios", icon: BarChart3 },
     { href: "/admin/courses", label: "Gerenciar Cursos", icon: BookOpen },
     { href: "/admin/enrollments", label: "Aprovações", icon: CheckSquare },
     { href: "/admin/students", label: "Alunos", icon: Users },

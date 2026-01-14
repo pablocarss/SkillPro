@@ -2,7 +2,46 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import crypto from "crypto";
+import {
+  generateTrainingCertificate,
+  canGenerateTrainingCertificate,
+} from "@/lib/training-certificate-generator";
+
+// GET - Verificar se pode gerar certificado
+export async function GET(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user) {
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
+    }
+
+    const searchParams = req.nextUrl.searchParams;
+    const trainingId = searchParams.get("trainingId");
+    const userId = searchParams.get("userId") || session.user.id;
+
+    if (!trainingId) {
+      return NextResponse.json(
+        { error: "trainingId é obrigatório" },
+        { status: 400 }
+      );
+    }
+
+    // Only admin can check for other users
+    if (userId !== session.user.id && session.user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Não autorizado" }, { status: 403 });
+    }
+
+    const result = await canGenerateTrainingCertificate(userId, trainingId);
+    return NextResponse.json(result);
+  } catch (error) {
+    console.error("Error checking certificate eligibility:", error);
+    return NextResponse.json(
+      { error: "Erro ao verificar elegibilidade" },
+      { status: 500 }
+    );
+  }
+}
 
 // POST - Gerar certificado de treinamento
 export async function POST(req: NextRequest) {
@@ -16,7 +55,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { trainingId } = await req.json();
+    const { trainingId, userId: requestedUserId } = await req.json();
 
     if (!trainingId) {
       return NextResponse.json(
@@ -25,11 +64,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Use provided userId or session user
+    const targetUserId = requestedUserId || session.user.id;
+
+    // Only admin can generate for other users
+    if (targetUserId !== session.user.id && session.user.role !== "ADMIN") {
+      return NextResponse.json({ error: "Não autorizado" }, { status: 403 });
+    }
+
     // Verificar se o usuário está matriculado
     const enrollment = await prisma.trainingEnrollment.findUnique({
       where: {
         userId_trainingId: {
-          userId: session.user.id,
+          userId: targetUserId,
           trainingId,
         },
       },
@@ -37,7 +84,7 @@ export async function POST(req: NextRequest) {
 
     if (!enrollment) {
       return NextResponse.json(
-        { error: "Você não está matriculado neste treinamento" },
+        { error: "Usuário não está matriculado neste treinamento" },
         { status: 403 }
       );
     }
@@ -68,7 +115,7 @@ export async function POST(req: NextRequest) {
 
     const completedLessons = await prisma.trainingLessonProgress.count({
       where: {
-        userlId: session.user.id,
+        userlId: targetUserId,
         lesson: {
           module: {
             trainingId,
@@ -80,88 +127,48 @@ export async function POST(req: NextRequest) {
 
     if (completedLessons < totalLessons) {
       return NextResponse.json(
-        { error: "Você precisa completar todas as aulas para obter o certificado" },
+        { error: "É preciso completar todas as aulas para obter o certificado" },
         { status: 400 }
       );
     }
 
-    // Verificar se já tem certificado
-    const existingCertificate = await prisma.trainingCertificate.findUnique({
-      where: {
-        userId_trainingId: {
-          userId: session.user.id,
-          trainingId,
-        },
-      },
+    // Verificar se passou na prova final (se existir)
+    const finalExam = await prisma.trainingFinalExam.findUnique({
+      where: { trainingId },
     });
 
-    if (existingCertificate) {
-      return NextResponse.json(existingCertificate);
+    if (finalExam) {
+      const passedExam = await prisma.trainingExamAttempt.findFirst({
+        where: {
+          userId: targetUserId,
+          examId: finalExam.id,
+          passed: true,
+        },
+      });
+
+      if (!passedExam) {
+        return NextResponse.json(
+          { error: "É preciso passar na prova final para obter o certificado" },
+          { status: 400 }
+        );
+      }
     }
 
-    // Buscar melhor nota da prova (se houver)
-    const bestExamAttempt = await prisma.trainingExamAttempt.findFirst({
-      where: {
-        userId: session.user.id,
-        exam: {
-          trainingId,
-        },
-        passed: true,
-      },
-      orderBy: { score: "desc" },
+    // Gerar certificado usando o gerador completo (com PDF)
+    const result = await generateTrainingCertificate({
+      userId: targetUserId,
+      trainingId,
+      createdById: session.user.id,
     });
 
-    // Calcular nota final (100% se não tiver prova, ou a nota da prova)
-    const finalScore = bestExamAttempt?.score || 100;
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.error },
+        { status: 400 }
+      );
+    }
 
-    // Gerar hash único para o certificado
-    const certificateHash = crypto
-      .createHash("sha256")
-      .update(`${session.user.id}-${trainingId}-${Date.now()}`)
-      .digest("hex")
-      .substring(0, 16)
-      .toUpperCase();
-
-    // Criar certificado
-    const certificate = await prisma.trainingCertificate.create({
-      data: {
-        userId: session.user.id,
-        trainingId,
-        createdById: session.user.id,
-        finalScore,
-        certificateHash,
-        digitalSignature: crypto
-          .createHash("sha512")
-          .update(`${certificateHash}-skillpro-training`)
-          .digest("hex"),
-      },
-      include: {
-        training: {
-          include: {
-            company: {
-              select: {
-                name: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    // Atualizar enrollment como concluído
-    await prisma.trainingEnrollment.update({
-      where: {
-        userId_trainingId: {
-          userId: session.user.id,
-          trainingId,
-        },
-      },
-      data: {
-        completedAt: new Date(),
-      },
-    });
-
-    return NextResponse.json(certificate, { status: 201 });
+    return NextResponse.json(result.certificate, { status: 201 });
   } catch (error) {
     console.error("Erro ao gerar certificado:", error);
     return NextResponse.json(

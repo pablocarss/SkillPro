@@ -18,7 +18,7 @@ interface Certificate {
     title: string;
     company: {
       name: string;
-    };
+    } | null;
   };
 }
 
@@ -115,10 +115,12 @@ export default function TreinamentosCertificadosPage() {
               </CardHeader>
               <CardContent className="p-4 sm:p-6 pt-0 space-y-4">
                 <div className="space-y-2 text-xs sm:text-sm">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Building2 className="h-3.5 w-3.5" />
-                    <span>{certificate.training.company.name}</span>
-                  </div>
+                  {certificate.training.company && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Building2 className="h-3.5 w-3.5" />
+                      <span>{certificate.training.company.name}</span>
+                    </div>
+                  )}
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Calendar className="h-3.5 w-3.5" />
                     <span>

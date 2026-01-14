@@ -36,6 +36,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import Link from "next/link";
+import { trainingSchema } from "@/lib/validations";
 
 interface Company {
   id: string;
@@ -86,6 +87,7 @@ export default function AdminTreinamentosPage() {
     passingScore: "70",
     companyIds: [] as string[],
   });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetchCompanies();
@@ -125,6 +127,27 @@ export default function AdminTreinamentosPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormErrors({});
+
+    // Validação com Zod
+    const dataToValidate = {
+      ...formData,
+      passingScore: parseInt(formData.passingScore) || 0,
+      level: formData.level as "Básico" | "Intermediário" | "Avançado",
+    };
+
+    const validation = trainingSchema.safeParse(dataToValidate);
+    if (!validation.success) {
+      const errors: Record<string, string> = {};
+      validation.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          errors[err.path[0] as string] = err.message;
+        }
+      });
+      setFormErrors(errors);
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -142,6 +165,7 @@ export default function AdminTreinamentosPage() {
         });
         setIsOpen(false);
         setFormData({ title: "", description: "", level: "Básico", duration: "", passingScore: "70", companyIds: [] });
+        setFormErrors({});
         fetchTrainings();
       } else {
         throw new Error(data.error || "Erro ao criar treinamento");
@@ -297,8 +321,11 @@ export default function AdminTreinamentosPage() {
                     id="title"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    required
+                    className={formErrors.title ? "border-destructive" : ""}
                   />
+                  {formErrors.title && (
+                    <p className="text-sm text-destructive">{formErrors.title}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -308,8 +335,11 @@ export default function AdminTreinamentosPage() {
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     rows={3}
-                    required
+                    className={formErrors.description ? "border-destructive" : ""}
                   />
+                  {formErrors.description && (
+                    <p className="text-sm text-destructive">{formErrors.description}</p>
+                  )}
                 </div>
 
                 <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
@@ -349,7 +379,11 @@ export default function AdminTreinamentosPage() {
                       max="100"
                       value={formData.passingScore}
                       onChange={(e) => setFormData({ ...formData, passingScore: e.target.value })}
+                      className={formErrors.passingScore ? "border-destructive" : ""}
                     />
+                    {formErrors.passingScore && (
+                      <p className="text-sm text-destructive">{formErrors.passingScore}</p>
+                    )}
                   </div>
                 </div>
 

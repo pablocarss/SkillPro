@@ -137,6 +137,7 @@ export async function GET(
         completed: completedLessons,
         percentage: totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0,
       },
+      hasExam: !!training.finalExam,
       examPassed: !!examAttempt,
       examScore: examAttempt?.score,
       hasCertificate: !!certificate,

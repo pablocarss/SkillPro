@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Award, CheckCircle, XCircle, Calendar, User, BookOpen, TrendingUp, Shield, Download } from "lucide-react";
+import { Award, CheckCircle, XCircle, Calendar, User, BookOpen, TrendingUp, Shield, Download, Building2, Briefcase } from "lucide-react";
 import Link from "next/link";
 import { verifyDigitalSignature } from "@/lib/pdf-converter";
 
@@ -11,11 +11,12 @@ interface PageProps {
 
 export default async function VerificarCertificadoPage({ params }: PageProps) {
   const { hash } = await params;
+  const hashUpper = hash.toUpperCase();
 
-  // Buscar certificado pelo hash
-  const certificate = await prisma.certificate.findUnique({
+  // Buscar certificado de curso EAD pelo hash
+  const courseCertificate = await prisma.certificate.findUnique({
     where: {
-      certificateHash: hash.toUpperCase(),
+      certificateHash: hashUpper,
     },
     include: {
       student: {
@@ -34,6 +35,38 @@ export default async function VerificarCertificadoPage({ params }: PageProps) {
       },
     },
   });
+
+  // Buscar certificado de treinamento pelo hash
+  const trainingCertificate = await prisma.trainingCertificate.findUnique({
+    where: {
+      certificateHash: hashUpper,
+    },
+    include: {
+      user: {
+        select: {
+          name: true,
+          cpf: true,
+        },
+      },
+      training: {
+        select: {
+          title: true,
+          description: true,
+          duration: true,
+          level: true,
+          company: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  // Verificar se encontrou algum certificado
+  const certificate = courseCertificate || trainingCertificate;
+  const isTrainingCertificate = !!trainingCertificate;
 
   if (!certificate) {
     return (
@@ -66,8 +99,37 @@ export default async function VerificarCertificadoPage({ params }: PageProps) {
     );
   }
 
+  // Preparar dados para exibição
+  const studentName = isTrainingCertificate
+    ? trainingCertificate!.user.name
+    : courseCertificate!.student.name;
+  const studentCpf = isTrainingCertificate
+    ? trainingCertificate!.user.cpf
+    : courseCertificate!.student.cpf;
+  const courseTitle = isTrainingCertificate
+    ? trainingCertificate!.training.title
+    : courseCertificate!.course.title;
+  const courseDescription = isTrainingCertificate
+    ? trainingCertificate!.training.description
+    : courseCertificate!.course.description;
+  const courseDuration = isTrainingCertificate
+    ? trainingCertificate!.training.duration
+    : courseCertificate!.course.duration;
+  const courseLevel = isTrainingCertificate
+    ? trainingCertificate!.training.level
+    : courseCertificate!.course.level;
+  const companyName = isTrainingCertificate
+    ? trainingCertificate!.training.company?.name
+    : null;
+  const relatedId = isTrainingCertificate
+    ? trainingCertificate!.trainingId
+    : courseCertificate!.courseId;
+  const userId = isTrainingCertificate
+    ? trainingCertificate!.userId
+    : courseCertificate!.studentId;
+
   // Verificar assinatura digital
-  const signatureData = `${certificate.certificateHash}-${certificate.studentId}-${certificate.courseId}-${certificate.finalScore}`;
+  const signatureData = `${certificate.certificateHash}-${userId}-${relatedId}-${certificate.finalScore}`;
   const isSignatureValid = certificate.digitalSignature
     ? verifyDigitalSignature(
         signatureData,
@@ -117,46 +179,61 @@ export default async function VerificarCertificadoPage({ params }: PageProps) {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
-              Informações do Aluno
+              {isTrainingCertificate ? "Informações do Funcionário" : "Informações do Aluno"}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div>
               <p className="text-sm text-gray-600">Nome Completo</p>
-              <p className="text-lg font-semibold text-gray-900">{certificate.student.name}</p>
+              <p className="text-lg font-semibold text-gray-900">{studentName}</p>
             </div>
             <div>
               <p className="text-sm text-gray-600">CPF</p>
-              <p className="font-mono text-gray-900">{certificate.student.cpf || "Não informado"}</p>
+              <p className="font-mono text-gray-900">{studentCpf || "Não informado"}</p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Course Details */}
+        {/* Course/Training Details */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <BookOpen className="h-5 w-5" />
-              Informações do Curso
+              {isTrainingCertificate ? (
+                <Briefcase className="h-5 w-5" />
+              ) : (
+                <BookOpen className="h-5 w-5" />
+              )}
+              {isTrainingCertificate ? "Informações do Treinamento" : "Informações do Curso"}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div>
-              <p className="text-sm text-gray-600">Curso</p>
-              <p className="text-lg font-semibold text-gray-900">{certificate.course.title}</p>
+              <p className="text-sm text-gray-600">{isTrainingCertificate ? "Treinamento" : "Curso"}</p>
+              <p className="text-lg font-semibold text-gray-900">{courseTitle}</p>
             </div>
-            <div>
-              <p className="text-sm text-gray-600">Descrição</p>
-              <p className="text-gray-700">{certificate.course.description}</p>
-            </div>
+            {courseDescription && (
+              <div>
+                <p className="text-sm text-gray-600">Descrição</p>
+                <p className="text-gray-700">{courseDescription}</p>
+              </div>
+            )}
+            {companyName && (
+              <div>
+                <p className="text-sm text-gray-600">Empresa</p>
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-gray-500" />
+                  <p className="font-semibold text-gray-900">{companyName}</p>
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-600">Carga Horária</p>
-                <p className="font-semibold text-gray-900">{certificate.course.duration || "N/A"}</p>
+                <p className="font-semibold text-gray-900">{courseDuration || "N/A"}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Nível</p>
-                <p className="font-semibold text-gray-900">{certificate.course.level || "N/A"}</p>
+                <p className="font-semibold text-gray-900">{courseLevel || "N/A"}</p>
               </div>
             </div>
           </CardContent>

@@ -34,6 +34,7 @@ import {
   Upload,
   Award,
   UsersRound,
+  Globe,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -55,6 +56,19 @@ import {
 } from "@/components/ui/accordion";
 import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
+import { VideoUpload } from "@/components/video-upload";
+import { TrainingMaterialUpload } from "@/components/training-material-upload";
+import { moduleSchema, lessonSchema } from "@/lib/validations";
+
+interface Material {
+  id: string;
+  title: string;
+  description: string | null;
+  fileUrl: string;
+  fileType: string;
+  fileSize: number | null;
+  isExternal: boolean;
+}
 
 interface Lesson {
   id: string;
@@ -63,6 +77,7 @@ interface Lesson {
   content: string;
   videoUrl: string | null;
   order: number;
+  materials?: Material[];
 }
 
 interface Module {
@@ -178,6 +193,12 @@ export default function TrainingDetailPage({ params }: { params: Promise<{ trein
     content: "",
     videoUrl: "",
   });
+  const [videoInputType, setVideoInputType] = useState<"url" | "upload">("url");
+  const [moduleErrors, setModuleErrors] = useState<Record<string, string>>({});
+  const [lessonErrors, setLessonErrors] = useState<Record<string, string>>({});
+  const [isMaterialsDialogOpen, setIsMaterialsDialogOpen] = useState(false);
+  const [selectedLessonForMaterials, setSelectedLessonForMaterials] = useState<Lesson | null>(null);
+  const [lessonMaterials, setLessonMaterials] = useState<Material[]>([]);
 
   useEffect(() => {
     fetchTraining();
@@ -220,6 +241,21 @@ export default function TrainingDetailPage({ params }: { params: Promise<{ trein
 
   const handleCreateModule = async (e: React.FormEvent) => {
     e.preventDefault();
+    setModuleErrors({});
+
+    // Validação com Zod
+    const validation = moduleSchema.safeParse(moduleForm);
+    if (!validation.success) {
+      const errors: Record<string, string> = {};
+      validation.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          errors[err.path[0] as string] = err.message;
+        }
+      });
+      setModuleErrors(errors);
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -233,6 +269,7 @@ export default function TrainingDetailPage({ params }: { params: Promise<{ trein
         toast({ title: "Módulo criado com sucesso!" });
         setIsModuleDialogOpen(false);
         setModuleForm({ title: "", description: "" });
+        setModuleErrors({});
         fetchTraining();
       } else {
         throw new Error("Erro ao criar módulo");
@@ -250,6 +287,21 @@ export default function TrainingDetailPage({ params }: { params: Promise<{ trein
   const handleCreateLesson = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedModule) return;
+    setLessonErrors({});
+
+    // Validação com Zod
+    const validation = lessonSchema.safeParse(lessonForm);
+    if (!validation.success) {
+      const errors: Record<string, string> = {};
+      validation.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          errors[err.path[0] as string] = err.message;
+        }
+      });
+      setLessonErrors(errors);
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -267,6 +319,8 @@ export default function TrainingDetailPage({ params }: { params: Promise<{ trein
         setIsLessonDialogOpen(false);
         setLessonForm({ title: "", description: "", content: "", videoUrl: "" });
         setSelectedModule(null);
+        setLessonErrors({});
+        setVideoInputType("url");
         fetchTraining();
       } else {
         throw new Error("Erro ao criar aula");
@@ -395,6 +449,9 @@ export default function TrainingDetailPage({ params }: { params: Promise<{ trein
 
   const openLessonDialog = (module: Module) => {
     setSelectedModule(module);
+    setLessonForm({ title: "", description: "", content: "", videoUrl: "" });
+    setLessonErrors({});
+    setVideoInputType("url");
     setIsLessonDialogOpen(true);
   };
 
@@ -407,6 +464,38 @@ export default function TrainingDetailPage({ params }: { params: Promise<{ trein
     setSelectedModule(module);
     setSelectedLesson(lesson);
     setIsDeleteLessonOpen(true);
+  };
+
+  // Abrir diálogo de materiais
+  const openMaterialsDialog = async (lesson: Lesson) => {
+    setSelectedLessonForMaterials(lesson);
+    setIsMaterialsDialogOpen(true);
+
+    // Buscar materiais da aula
+    try {
+      const response = await fetch(`/api/training-lessons/${lesson.id}/materials`);
+      if (response.ok) {
+        const materials = await response.json();
+        setLessonMaterials(materials);
+      }
+    } catch (error) {
+      console.error("Erro ao buscar materiais:", error);
+      setLessonMaterials([]);
+    }
+  };
+
+  const handleMaterialsUpdate = async () => {
+    if (!selectedLessonForMaterials) return;
+
+    try {
+      const response = await fetch(`/api/training-lessons/${selectedLessonForMaterials.id}/materials`);
+      if (response.ok) {
+        const materials = await response.json();
+        setLessonMaterials(materials);
+      }
+    } catch (error) {
+      console.error("Erro ao atualizar materiais:", error);
+    }
   };
 
   // Vincular empresa ao treinamento
@@ -640,6 +729,12 @@ export default function TrainingDetailPage({ params }: { params: Promise<{ trein
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
+            <Link href={`/admin/empresarial/treinamentos/${resolvedParams.treinamentoId}/prova-final`}>
+              <Button variant="outline">
+                <FileText className="mr-2 h-4 w-4" />
+                Prova Final
+              </Button>
+            </Link>
             <Dialog open={isEnrollDialogOpen} onOpenChange={setIsEnrollDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline">
@@ -758,8 +853,11 @@ export default function TrainingDetailPage({ params }: { params: Promise<{ trein
                       id="module-title"
                       value={moduleForm.title}
                       onChange={(e) => setModuleForm({ ...moduleForm, title: e.target.value })}
-                      required
+                      className={moduleErrors.title ? "border-destructive" : ""}
                     />
+                    {moduleErrors.title && (
+                      <p className="text-sm text-destructive">{moduleErrors.title}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="module-description">Descrição (opcional)</Label>
@@ -768,7 +866,11 @@ export default function TrainingDetailPage({ params }: { params: Promise<{ trein
                       value={moduleForm.description}
                       onChange={(e) => setModuleForm({ ...moduleForm, description: e.target.value })}
                       rows={2}
+                      className={moduleErrors.description ? "border-destructive" : ""}
                     />
+                    {moduleErrors.description && (
+                      <p className="text-sm text-destructive">{moduleErrors.description}</p>
+                    )}
                   </div>
                   <div className="flex justify-end gap-2">
                     <Button type="button" variant="outline" onClick={() => setIsModuleDialogOpen(false)}>
@@ -870,14 +972,25 @@ export default function TrainingDetailPage({ params }: { params: Promise<{ trein
                                 )}
                                 <span className="text-sm">{lesson.title}</span>
                               </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 opacity-0 group-hover:opacity-100"
-                                onClick={() => openDeleteLessonDialog(module, lesson)}
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
+                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 px-2"
+                                  onClick={() => openMaterialsDialog(lesson)}
+                                >
+                                  <FileText className="h-4 w-4 mr-1" />
+                                  Materiais
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => openDeleteLessonDialog(module, lesson)}
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </div>
                             </div>
                           ))}
                           <div className="flex gap-2 pt-2">
@@ -964,8 +1077,11 @@ export default function TrainingDetailPage({ params }: { params: Promise<{ trein
                 id="lesson-title"
                 value={lessonForm.title}
                 onChange={(e) => setLessonForm({ ...lessonForm, title: e.target.value })}
-                required
+                className={lessonErrors.title ? "border-destructive" : ""}
               />
+              {lessonErrors.title && (
+                <p className="text-sm text-destructive">{lessonErrors.title}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="lesson-description">Descrição (opcional)</Label>
@@ -974,7 +1090,11 @@ export default function TrainingDetailPage({ params }: { params: Promise<{ trein
                 value={lessonForm.description}
                 onChange={(e) => setLessonForm({ ...lessonForm, description: e.target.value })}
                 rows={2}
+                className={lessonErrors.description ? "border-destructive" : ""}
               />
+              {lessonErrors.description && (
+                <p className="text-sm text-destructive">{lessonErrors.description}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="lesson-content">Conteúdo</Label>
@@ -983,17 +1103,64 @@ export default function TrainingDetailPage({ params }: { params: Promise<{ trein
                 value={lessonForm.content}
                 onChange={(e) => setLessonForm({ ...lessonForm, content: e.target.value })}
                 rows={6}
-                required
+                className={lessonErrors.content ? "border-destructive" : ""}
               />
+              {lessonErrors.content && (
+                <p className="text-sm text-destructive">{lessonErrors.content}</p>
+              )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="lesson-video">URL do Vídeo (opcional)</Label>
-              <Input
-                id="lesson-video"
-                value={lessonForm.videoUrl}
-                onChange={(e) => setLessonForm({ ...lessonForm, videoUrl: e.target.value })}
-                placeholder="https://youtube.com/watch?v=..."
-              />
+              <Label>Vídeo (opcional)</Label>
+              <Tabs value={videoInputType} onValueChange={(v) => setVideoInputType(v as "url" | "upload")}>
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="url" className="flex items-center gap-2">
+                    <Globe className="h-4 w-4" />
+                    URL Externa
+                  </TabsTrigger>
+                  <TabsTrigger value="upload" className="flex items-center gap-2">
+                    <Upload className="h-4 w-4" />
+                    Upload
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="url" className="mt-3">
+                  <div className="space-y-2">
+                    <Input
+                      id="lesson-video"
+                      value={lessonForm.videoUrl}
+                      onChange={(e) => setLessonForm({ ...lessonForm, videoUrl: e.target.value })}
+                      placeholder="https://youtube.com/watch?v=... ou https://vimeo.com/..."
+                      className={lessonErrors.videoUrl ? "border-destructive" : ""}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Suporta YouTube, Vimeo, Dailymotion, Wistia e Loom
+                    </p>
+                    {lessonErrors.videoUrl && (
+                      <p className="text-sm text-destructive">{lessonErrors.videoUrl}</p>
+                    )}
+                  </div>
+                </TabsContent>
+                <TabsContent value="upload" className="mt-3">
+                  <VideoUpload
+                    onVideoUploaded={(url) => setLessonForm({ ...lessonForm, videoUrl: url })}
+                    currentVideoUrl={lessonForm.videoUrl}
+                  />
+                </TabsContent>
+              </Tabs>
+              {lessonForm.videoUrl && (
+                <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
+                  <Video className="h-4 w-4 text-green-600" />
+                  <span className="text-sm text-green-600">Vídeo configurado</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="ml-auto h-6 px-2"
+                    onClick={() => setLessonForm({ ...lessonForm, videoUrl: "" })}
+                  >
+                    Remover
+                  </Button>
+                </div>
+              )}
             </div>
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setIsLessonDialogOpen(false)}>
@@ -1174,7 +1341,7 @@ export default function TrainingDetailPage({ params }: { params: Promise<{ trein
 
       {/* Template Upload Dialog */}
       <Dialog open={isTemplateDialogOpen} onOpenChange={setIsTemplateDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Upload de Template de Certificado</DialogTitle>
             <DialogDescription>
@@ -1212,6 +1379,70 @@ export default function TrainingDetailPage({ params }: { params: Promise<{ trein
                 O template deve ser um arquivo Word (.docx) com placeholders para os dados do certificado.
               </p>
             </div>
+
+            {/* Template Variables Documentation */}
+            <div className="space-y-2 border rounded-lg p-4 bg-muted/50">
+              <Label className="text-sm font-semibold">Variáveis Disponíveis</Label>
+              <p className="text-xs text-muted-foreground mb-3">
+                Use estas variáveis no seu template Word entre chaves, ex: {"{nome}"}, {"{empresa}"}
+              </p>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                <div className="font-medium text-primary">Dados do Funcionário:</div>
+                <div></div>
+                <code className="bg-background px-1 rounded">{"{nome}"}</code>
+                <span className="text-muted-foreground">Nome completo</span>
+                <code className="bg-background px-1 rounded">{"{cpf}"}</code>
+                <span className="text-muted-foreground">CPF</span>
+                <code className="bg-background px-1 rounded">{"{email}"}</code>
+                <span className="text-muted-foreground">E-mail</span>
+                <code className="bg-background px-1 rounded">{"{empresa_funcionario}"}</code>
+                <span className="text-muted-foreground">Empresa do funcionário</span>
+                <code className="bg-background px-1 rounded">{"{cnpj_funcionario}"}</code>
+                <span className="text-muted-foreground">CNPJ da empresa</span>
+
+                <div className="font-medium text-primary mt-2">Dados do Treinamento:</div>
+                <div></div>
+                <code className="bg-background px-1 rounded">{"{treinamento}"}</code>
+                <span className="text-muted-foreground">Nome do treinamento</span>
+                <code className="bg-background px-1 rounded">{"{descricao}"}</code>
+                <span className="text-muted-foreground">Descrição</span>
+                <code className="bg-background px-1 rounded">{"{carga_horaria}"}</code>
+                <span className="text-muted-foreground">Carga horária</span>
+                <code className="bg-background px-1 rounded">{"{nivel}"}</code>
+                <span className="text-muted-foreground">Nível</span>
+                <code className="bg-background px-1 rounded">{"{empresa}"}</code>
+                <span className="text-muted-foreground">Empresa que oferece</span>
+                <code className="bg-background px-1 rounded">{"{cnpj}"}</code>
+                <span className="text-muted-foreground">CNPJ da empresa</span>
+
+                <div className="font-medium text-primary mt-2">Datas:</div>
+                <div></div>
+                <code className="bg-background px-1 rounded">{"{data}"}</code>
+                <span className="text-muted-foreground">Data por extenso</span>
+                <code className="bg-background px-1 rounded">{"{data_curta}"}</code>
+                <span className="text-muted-foreground">DD/MM/AAAA</span>
+                <code className="bg-background px-1 rounded">{"{dia}"}</code>
+                <span className="text-muted-foreground">Dia</span>
+                <code className="bg-background px-1 rounded">{"{mes}"}</code>
+                <span className="text-muted-foreground">Mês por extenso</span>
+                <code className="bg-background px-1 rounded">{"{ano}"}</code>
+                <span className="text-muted-foreground">Ano</span>
+
+                <div className="font-medium text-primary mt-2">Desempenho:</div>
+                <div></div>
+                <code className="bg-background px-1 rounded">{"{nota}"}</code>
+                <span className="text-muted-foreground">Nota (ex: 85.5)</span>
+                <code className="bg-background px-1 rounded">{"{nota_inteiro}"}</code>
+                <span className="text-muted-foreground">Nota inteira (ex: 86)</span>
+
+                <div className="font-medium text-primary mt-2">Verificação:</div>
+                <div></div>
+                <code className="bg-background px-1 rounded">{"{hash}"}</code>
+                <span className="text-muted-foreground">Código de verificação</span>
+                <code className="bg-background px-1 rounded">{"{url_verificacao}"}</code>
+                <span className="text-muted-foreground">URL de verificação</span>
+              </div>
+            </div>
           </div>
           <div className="flex justify-end gap-2 pt-4">
             <Button variant="outline" onClick={() => setIsTemplateDialogOpen(false)}>
@@ -1222,6 +1453,31 @@ export default function TrainingDetailPage({ params }: { params: Promise<{ trein
               disabled={!templateFile || !selectedCompanyForTemplate || isLoading}
             >
               {isLoading ? "Enviando..." : "Enviar Template"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Materials Dialog */}
+      <Dialog open={isMaterialsDialogOpen} onOpenChange={setIsMaterialsDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Materiais de Apoio</DialogTitle>
+            <DialogDescription>
+              Gerencie os materiais de apoio da aula: {selectedLessonForMaterials?.title}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedLessonForMaterials && (
+            <TrainingMaterialUpload
+              lessonId={selectedLessonForMaterials.id}
+              materials={lessonMaterials}
+              onMaterialAdded={handleMaterialsUpdate}
+              onMaterialDeleted={handleMaterialsUpdate}
+            />
+          )}
+          <div className="flex justify-end pt-4">
+            <Button variant="outline" onClick={() => setIsMaterialsDialogOpen(false)}>
+              Fechar
             </Button>
           </div>
         </DialogContent>
