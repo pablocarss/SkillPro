@@ -11,22 +11,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import Link from "next/link";
 
-// ISR - Revalidar a cada 30 minutos
-export const revalidate = 1800;
-
-// Gerar páginas estáticas para os 20 cursos mais populares
-export async function generateStaticParams() {
-  const courses = await prisma.course.findMany({
-    where: { isPublished: true },
-    select: { id: true },
-    orderBy: { enrollments: { _count: 'desc' } },
-    take: 20
-  });
-
-  return courses.map((course) => ({
-    id: course.id,
-  }));
-}
+// Forçar renderização dinâmica (SSR)
+export const dynamic = 'force-dynamic';
 
 // Gerar metadata para SEO
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
