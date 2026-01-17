@@ -1,4 +1,7 @@
 import { prisma } from "@/lib/prisma";
+
+// Força renderização dinâmica (SSR) - evita erro de build sem banco de dados
+export const dynamic = 'force-dynamic';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Award, CheckCircle, XCircle, Calendar, User, BookOpen, TrendingUp, Shield, Download, Building2, Briefcase } from "lucide-react";

@@ -2,6 +2,9 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+
+// Força renderização dinâmica (SSR) - evita erro de build sem banco de dados
+export const dynamic = 'force-dynamic';
 import { CheckoutClient } from "./checkout-client";
 import { notFound } from "next/navigation";
 

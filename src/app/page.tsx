@@ -11,8 +11,8 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
-// ISR - Revalidar a cada 1 hora
-export const revalidate = 3600;
+// Força renderização dinâmica (SSR) - evita erro de build sem banco de dados
+export const dynamic = 'force-dynamic';
 
 export default async function Home() {
   // Buscar estatisticas
