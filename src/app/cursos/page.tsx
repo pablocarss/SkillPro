@@ -2,8 +2,8 @@ import { Navbar } from "@/components/navbar";
 import { CourseCard } from "@/components/course-card";
 import { prisma } from "@/lib/prisma";
 
-// ISR - Revalidar a cada 30 minutos
-export const revalidate = 1800;
+// Força renderização dinâmica (SSR) - evita erro de build sem banco de dados
+export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: "Todos os Cursos - SkillPro",
